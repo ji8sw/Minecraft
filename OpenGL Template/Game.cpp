@@ -1,15 +1,15 @@
 #include <GL\glew.h>
 #include <GLFW/glfw3.h>
 #include "Helper.h"
-#include <string>
-#include <vector>
-#include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 GLFWwindow* Window = NULL;
-unsigned int VBO, VAO;
+unsigned int VBO, VAO, EBO;
 unsigned int VertexShader;
 unsigned int FragmentShader;
 unsigned int ShaderProgram;
+bool WireframeMode = false;
 
 void WindowSizeChanged(GLFWwindow* window, int NewWidth, int NewHeight)
 {
@@ -40,16 +40,23 @@ bool MakeWindow(int Width = 1920, int Height = 1080, std::string Title = "Minecr
 bool CreateBuffers()
 {
 	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VAO);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(TriangleVertices), TriangleVertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(RectangleIndices), RectangleIndices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
 	glBindVertexArray(0);
 
 	return true;
@@ -85,10 +92,28 @@ unsigned int CreateShaderProgram(std::vector<unsigned int> Shaders)
 	return NewShaderProgram;
 }
 
+void HandleInput()
+{
+	if (glfwGetKey(Window, GLFW_KEY_X) == GLFW_PRESS)
+	{
+		WireframeMode = !WireframeMode;
+		glPolygonMode(GL_FRONT_AND_BACK, WireframeMode ? GL_LINE : GL_FILL);
+	}
+}
+
 int main()
 {
 	if (!InitializeGL() || !MakeWindow())
 		return ExitCodes::Error;
+
+	int Width, Height, ChannelCount;
+	unsigned char* Data = stbi_load("container.jpg", &Width, &Height, &ChannelCount, 0);
+	unsigned int Texture;
+	glGenTextures(1, &Texture);
+	glBindTexture(GL_TEXTURE_2D, Texture);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, GL_RGB, Width, Height, 0, GL_RGB, GL_UNSIGNED_BYTE, Data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(Data);
 
 	VertexShader = CreateShader(StandardVertexShaderSource, GL_VERTEX_SHADER);
 	FragmentShader = CreateShader(StandardFragmentShaderSource, GL_FRAGMENT_SHADER);
@@ -100,10 +125,19 @@ int main()
 	{
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		HandleInput();
+
+		float Time = glfwGetTime();
+		float GreenValue = (sin(Time) / 2.0f) + 0.5f;
+		int VertexColourLocation = glGetUniformLocation(ShaderProgram, "ObjectColour");
 
 		glUseProgram(ShaderProgram);
+
+		glUniform4f(VertexColourLocation, 0.0f, GreenValue, 0.0f, 1.0f);
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
 
 		glfwSwapBuffers(Window);
 		glfwPollEvents();
