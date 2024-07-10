@@ -94,9 +94,6 @@ const char* StandardVertexShaderSource =
 R"(
 #version 330 core
 layout(location = 0) in vec3 VertexPosition;
-layout(location = 1) in vec2 TextureCoordinates;
-
-out vec2 OutTextureCoordinates;
 
 uniform mat4 Model;
 uniform mat4 View;
@@ -105,7 +102,6 @@ uniform mat4 Projection;
 void main()
 {
 	gl_Position = Projection * View * Model * vec4(VertexPosition, 1.0);
-	OutTextureCoordinates = vec2(TextureCoordinates.x, TextureCoordinates.y);
 };
 )";
 
@@ -116,11 +112,67 @@ out vec4 FragColor;
 
 in vec2 OutTextureCoordinates;
 
+uniform vec3 LightColour;
 uniform sampler2D Texture1;
 uniform sampler2D Texture2;
 
 void main()
 {
-	FragColor = mix(texture(Texture1, OutTextureCoordinates), texture(Texture2, OutTextureCoordinates), 0.2);
+	FragColor = vec4(LightColour * 1.0f, 0.5f, 0.31f);
+}
+)";
+
+const char* ColoursVertexShaderCode =
+R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
+}
+)";
+
+const char* ColoursFragmentShaderCode =
+R"(
+#version 330 core
+out vec4 FragColor;
+  
+uniform vec3 objectColor;
+uniform vec3 lightColor;
+
+void main()
+{
+    FragColor = vec4(lightColor * objectColor, 1.0);
+}
+)";
+
+const char* LightCubeVertexShadersCode =
+R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
+}
+)";
+
+const char* LightCubeFragmentShaderCode =
+R"(
+#version 330 core
+out vec4 FragColor;
+
+void main()
+{
+    FragColor = vec4(1.0); // set all 4 vector values to 1.0
 }
 )";

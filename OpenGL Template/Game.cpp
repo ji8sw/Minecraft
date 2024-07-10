@@ -5,10 +5,11 @@
 #include "stb_image.h"
 
 GLFWwindow* Window = NULL;
-unsigned int VBO, VAO, EBO;
+unsigned int VBO, VAO, EBO, LightCubeVAO, CubeVAO;
 unsigned int VertexShader;
 unsigned int FragmentShader;
 unsigned int ShaderProgram;
+unsigned int LightShader;
 bool WireframeMode = false;
 int ExistingTextures = 0;
 glm::vec3 CameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -19,6 +20,7 @@ float LastFrame = 0.0f;
 float CursorX = 1920 / 2, CursorY = 1080 / 2;
 bool FirstMouse = true;
 float CameraYaw = -90.0f, CameraPitch = 0.0f;
+glm::vec3 LightPosition(1.2f, 1.0f, 2.0f);
 
 void WindowSizeChanged(GLFWwindow* Window, int NewWidth, int NewHeight)
 {
@@ -84,28 +86,32 @@ bool MakeWindow(int Width = 1920, int Height = 1080, std::string Title = "Minecr
 
 bool CreateBuffers()
 {
-	glGenVertexArrays(1, &VAO);
+	glGenVertexArrays(1, &CubeVAO);
 	glGenBuffers(1, &VBO);
-
-	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(RectangleVertices), RectangleVertices, GL_STATIC_DRAW);
 
+	glBindVertexArray(CubeVAO);
+
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	// colour coord attribute
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+
+	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+	glGenVertexArrays(1, &LightCubeVAO);
+	glBindVertexArray(LightCubeVAO);
+
+	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
 	return true;
 }
 
-unsigned int CreateShader(const char* Source, int Type = GL_VERTEX_SHADER)
+unsigned int CreateShader(const char* Name, const char* Source, int Type = GL_VERTEX_SHADER)
 {
 	unsigned int NewShader = glCreateShader(Type);
 	glShaderSource(NewShader, 1, &Source, NULL);
@@ -119,7 +125,7 @@ unsigned int CreateShader(const char* Source, int Type = GL_VERTEX_SHADER)
 	if (!Success)
 	{
 		glGetShaderInfoLog(NewShader, 512, NULL, InfoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << InfoLog << std::endl;
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED::" << Name << std::endl << InfoLog << std::endl;
 	}
 
 	return NewShader;
@@ -185,65 +191,60 @@ int main()
 	if (!InitializeGL() || !MakeWindow())
 		return ExitCodes::Error;
 
-	VertexShader = CreateShader(StandardVertexShaderSource, GL_VERTEX_SHADER);
-	FragmentShader = CreateShader(StandardFragmentShaderSource, GL_FRAGMENT_SHADER);
-	ShaderProgram = CreateShaderProgram(std::vector<unsigned int> { VertexShader, FragmentShader });
+	unsigned int ColoursVertexShader = CreateShader("ColoursVertexShader", ColoursVertexShaderCode, GL_VERTEX_SHADER);
+	unsigned int ColoursFragmentShader = CreateShader("ColoursFragmentShader", ColoursFragmentShaderCode, GL_FRAGMENT_SHADER);
+	unsigned int LightShaderProgram = CreateShaderProgram(std::vector<unsigned int> { ColoursVertexShaderCode, ColoursFragmentShaderCode });
+
+	unsigned int LightCubeVertexShader = CreateShader("LightCubeVertexShader", LightCubeVertexShadersCode, GL_VERTEX_SHADER);
+	unsigned int LightCubeFragmentShader = CreateShader("LightCubeFragmentShader", LightCubeFragmentShaderCode, GL_FRAGMENT_SHADER);
+	unsigned int LightCubeShaderProgram = CreateShaderProgram(std::vector<unsigned int> { LightCubeVertexShader, LightCubeFragmentShader });
 
 	CreateBuffers();
-
-	unsigned int Texture = CreateTexture("container.jpg");
-	if (Texture == -1)
-		return ExitCodes::Error;
-
-	unsigned int FaceTexture = CreateTexture("awesomeface.png", GL_RGBA);
-	if (FaceTexture == -1)
-		return ExitCodes::Error;
-
-	glUseProgram(ShaderProgram);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Texture1"), 0);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Texture2"), 1);
 
 	while (!glfwWindowShouldClose(Window))
 	{
 		float CurrentFrame = glfwGetTime();
 		DeltaTime = CurrentFrame - LastFrame;
 		LastFrame = CurrentFrame;
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		HandleInput();
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, Texture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FaceTexture);
+		glUseProgram(LightShaderProgram);
+		glm::vec3 ObjectColour = glm::vec3(1.0f, 0.5f, 0.31f);
+		int ObjectColourPos = glGetUniformLocation(LightShaderProgram, "objectColour");
+		glUniformMatrix3fv(ObjectColourPos, 1, GL_FALSE, glm::value_ptr(ObjectColour));
+		glm::vec3 LightColour = glm::vec3(1.0f, 1.0f, 1.0f);
+		int LightColourPos = glGetUniformLocation(LightShaderProgram, "lightColour");
+		glUniformMatrix3fv(LightColourPos, 1, GL_FALSE, glm::value_ptr(LightColour));
 
-		glUseProgram(ShaderProgram);
+		glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
+		glm::mat4 View		 = glm::lookAt(CameraPosition, CameraPosition + CameraFront, CameraUp);
+		int ProjectionPosition = glGetUniformLocation(LightShaderProgram, "projection");
+		glUniformMatrix4fv(ProjectionPosition, 1, GL_FALSE, &View[0][0]);
+		int ViewPosition = glGetUniformLocation(LightShaderProgram, "view");
+		glUniformMatrix4fv(ViewPosition, 1, GL_FALSE, glm::value_ptr(Projection));
 
-		glm::mat4 View		 = glm::mat4(1.0f);
-		glm::mat4 Projection = glm::mat4(1.0f);
-		View = glm::lookAt(CameraPosition, CameraPosition + CameraFront, CameraUp);
-		Projection = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
+		glm::mat4 Model = glm::mat4(1.0f);
+		int ModelPosition = glGetUniformLocation(LightShaderProgram, "model");
+		glUniformMatrix4fv(ModelPosition, 1, GL_FALSE, glm::value_ptr(Model));
 
-		int ViewLocation = glGetUniformLocation(ShaderProgram, "View");
-		glUniformMatrix4fv(ViewLocation, 1, GL_FALSE, &View[0][0]);
-		int ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
-		glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, glm::value_ptr(Projection));
+		glBindVertexArray(CubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		glBindVertexArray(VAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		glUseProgram(LightCubeShaderProgram);
+		ProjectionPosition = glGetUniformLocation(LightShaderProgram, "projection");
+		glUniformMatrix4fv(ProjectionPosition, 1, GL_FALSE, &View[0][0]);
+		ViewPosition = glGetUniformLocation(LightShaderProgram, "view");
+		glUniformMatrix4fv(ViewPosition, 1, GL_FALSE, glm::value_ptr(Projection));
+		Model = glm::mat4(1.0f);
+		Model = glm::translate(Model, LightPosition);
+		Model = glm::scale(Model, glm::vec3(0.2f)); // a smaller cube
+		ModelPosition = glGetUniformLocation(LightCubeShaderProgram, "model");
+		glUniformMatrix4fv(ModelPosition, 1, GL_FALSE, glm::value_ptr(Model));
 
-		glBindVertexArray(VAO);
-		for (unsigned int i = 0; i < 10; i++)
-		{
-			glm::mat4 Model = glm::mat4(1.0f);
-			Model = glm::translate(Model, CubePositions[i]);
-			float angle = 20.0f * i;
-			Model = glm::rotate(Model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
-			glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		glBindVertexArray(LightCubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glfwSwapBuffers(Window);
 		glfwPollEvents();
