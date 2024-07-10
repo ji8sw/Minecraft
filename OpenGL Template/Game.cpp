@@ -3,6 +3,9 @@
 #include "Helper.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 GLFWwindow* Window = NULL;
 unsigned int VBO, VAO, EBO;
@@ -158,6 +161,13 @@ int main()
 		HandleInput();
 
 		glUseProgram(ShaderProgram);
+
+		glm::mat4 Transformation = glm::mat4(1.0f);
+		Transformation = glm::translate(Transformation, glm::vec3(0.5f, -0.5f, 0.0f));
+		Transformation = glm::rotate(Transformation, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+
+		unsigned int TransformLocation = glGetUniformLocation(ShaderProgram, "Transform");
+		glUniformMatrix4fv(TransformLocation, 1, GL_FALSE, glm::value_ptr(Transformation));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, Texture);

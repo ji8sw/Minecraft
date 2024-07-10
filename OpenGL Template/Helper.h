@@ -50,16 +50,15 @@ const char* StandardVertexShaderSource =
 R"(
 #version 330 core
 layout(location = 0) in vec3 VertexPosition;
-layout(location = 1) in vec3 VertexColour;
 layout(location = 2) in vec2 TextureCoordinates;
 
-out vec3 OutColour;
 out vec2 OutTextureCoordinates;
+
+uniform mat4 Transform;
 
 void main()
 {
-	gl_Position = vec4(VertexPosition, 1.0);
-	OutColour = VertexColour;
+	gl_Position = Transform * vec4(VertexPosition, 1.0);
 	OutTextureCoordinates = vec2(TextureCoordinates.x, TextureCoordinates.y);
 };
 )";
