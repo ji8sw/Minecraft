@@ -156,7 +156,7 @@ void HandleInput()
 		CameraPosition += glm::normalize(glm::cross(CameraFront, CameraUp)) * CameraSpeed;
 }
 
-unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR, int Smoothing = GL_LINEAR, bool FlipVertically = true)
+unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true)
 {
 	stbi_set_flip_vertically_on_load(FlipVertically);
 	unsigned int NewTexture;
@@ -168,7 +168,7 @@ unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepea
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Smoothing);
 
 	int Width, Height, ChannelCount;
-	unsigned char* Data = stbi_load(Path, &Width, &Height, &ChannelCount, 0);
+	unsigned char* Data = stbi_load(std::format("Textures/{}", Path).c_str(), &Width, &Height, &ChannelCount, 0);
 
 	if (!Data)
 		return -1;
@@ -191,17 +191,25 @@ int main()
 
 	CreateBuffers();
 
-	unsigned int Texture = CreateTexture("container.jpg");
-	if (Texture == -1)
+	unsigned int GrassTopTexture = CreateTexture("GrassTop.png");
+	if (GrassTopTexture == -1)
 		return ExitCodes::Error;
 
-	unsigned int FaceTexture = CreateTexture("awesomeface.png", GL_RGBA);
-	if (FaceTexture == -1)
+	unsigned int DirtTexture = CreateTexture("Dirt.png");
+	if (DirtTexture == -1)
+		return ExitCodes::Error;
+
+	unsigned int GrassSideTexture = CreateTexture("GrassSide.png");
+	if (GrassSideTexture == -1)
 		return ExitCodes::Error;
 
 	glUseProgram(ShaderProgram);
 	glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), 0);
 	glUniform1i(glGetUniformLocation(ShaderProgram, "Bottom"), 1);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "Front"), 2);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "Back"), 2);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "Left"), 2);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "Right"), 2);
 
 	while (!glfwWindowShouldClose(Window))
 	{
@@ -213,9 +221,11 @@ int main()
 		HandleInput();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, Texture);
+		glBindTexture(GL_TEXTURE_2D, GrassTopTexture);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FaceTexture);
+		glBindTexture(GL_TEXTURE_2D, DirtTexture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, GrassSideTexture);
 
 		glUseProgram(ShaderProgram);
 
