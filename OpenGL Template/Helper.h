@@ -22,10 +22,11 @@ float TriangleVertices[] =
 
 float RectangleVertices[] =
 {
-	 0.5f,  0.5f, 0.0f,  // top right
-	 0.5f, -0.5f, 0.0f,  // bottom right
-	-0.5f, -0.5f, 0.0f,  // bottom left
-	-0.5f,  0.5f, 0.0f   // top left 
+	// positions          // colors           // texture coords
+	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 };
 
 unsigned int RectangleIndices[] =
@@ -50,13 +51,16 @@ R"(
 #version 330 core
 layout(location = 0) in vec3 VertexPosition;
 layout(location = 1) in vec3 VertexColour;
+layout(location = 2) in vec2 TextureCoordinates;
 
 out vec3 OutColour;
+out vec2 OutTextureCoordinates;
 
 void main()
 {
 	gl_Position = vec4(VertexPosition, 1.0);
 	OutColour = VertexColour;
+	OutTextureCoordinates = vec2(TextureCoordinates.x, TextureCoordinates.y);
 };
 )";
 
@@ -64,10 +68,15 @@ const char* StandardFragmentShaderSource =
 R"(
 #version 330 core
 out vec4 FragColor;
+
 in vec3 OutColour;
+in vec2 OutTextureCoordinates;
+
+uniform sampler2D Texture1;
+uniform sampler2D Texture2;
 
 void main()
 {
-	FragColor = vec4(OutColour, 1.0);
+	FragColor = mix(texture(Texture1, OutTextureCoordinates), texture(Texture2, OutTextureCoordinates), 0.2);
 }
 )";
