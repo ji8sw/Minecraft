@@ -200,8 +200,8 @@ int main()
 		return ExitCodes::Error;
 
 	glUseProgram(ShaderProgram);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Texture1"), 0);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Texture2"), 1);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), 0);
+	glUniform1i(glGetUniformLocation(ShaderProgram, "Bottom"), 1);
 
 	while (!glfwWindowShouldClose(Window))
 	{
@@ -233,16 +233,20 @@ int main()
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glBindVertexArray(VAO);
-		for (unsigned int i = 0; i < 10; i++)
+		for (unsigned int X = 0; X < 10; X++)
 		{
-			glm::mat4 Model = glm::mat4(1.0f);
-			Model = glm::translate(Model, CubePositions[i]);
-			float angle = 20.0f * i;
-			Model = glm::rotate(Model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
-			glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
+			for (unsigned int Y = 0; Y < 10; Y++)
+			{
+				for (unsigned int Z = 0; Z < 10; Z++)
+				{
+					glm::mat4 Model = glm::mat4(1.0f);
+					Model = glm::translate(Model, glm::vec3(X, Y, Z));
+					int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
+					glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
 
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+					glDrawArrays(GL_TRIANGLES, 0, 36);
+				}
+			}
 		}
 
 		glfwSwapBuffers(Window);

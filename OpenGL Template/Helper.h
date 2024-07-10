@@ -60,19 +60,6 @@ float RectangleVertices[] =
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
-glm::vec3 CubePositions[] = {
-    glm::vec3(0.0f,  0.0f,  0.0f),
-    glm::vec3(2.0f,  5.0f, -15.0f),
-    glm::vec3(-1.5f, -2.2f, -2.5f),
-    glm::vec3(-3.8f, -2.0f, -12.3f),
-    glm::vec3(2.4f, -0.4f, -3.5f),
-    glm::vec3(-1.7f,  3.0f, -7.5f),
-    glm::vec3(1.3f, -2.0f, -2.5f),
-    glm::vec3(1.5f,  2.0f, -2.5f),
-    glm::vec3(1.5f,  0.2f, -1.5f),
-    glm::vec3(-1.3f,  1.0f, -1.5f)
-};
-
 unsigned int RectangleIndices[] =
 {
 	0, 1, 3,   // first triangle
@@ -96,6 +83,7 @@ R"(
 layout(location = 0) in vec3 VertexPosition;
 layout(location = 1) in vec2 TextureCoordinates;
 
+out vec3 FragmentPosition;
 out vec2 OutTextureCoordinates;
 
 uniform mat4 Model;
@@ -104,6 +92,7 @@ uniform mat4 Projection;
 
 void main()
 {
+    FragmentPosition = VertexPosition;
 	gl_Position = Projection * View * Model * vec4(VertexPosition, 1.0);
 	OutTextureCoordinates = vec2(TextureCoordinates.x, TextureCoordinates.y);
 };
@@ -114,13 +103,35 @@ R"(
 #version 330 core
 out vec4 FragColor;
 
+in vec3 FragmentPosition;
 in vec2 OutTextureCoordinates;
 
-uniform sampler2D Texture1;
-uniform sampler2D Texture2;
+uniform sampler2D Top;
+uniform sampler2D Bottom;
+uniform sampler2D Front;
+uniform sampler2D Back;
+uniform sampler2D Left;
+uniform sampler2D Right;
+uniform sampler2D Default;
+
+const float EPSILON = 0.01;
 
 void main()
 {
-	FragColor = mix(texture(Texture1, OutTextureCoordinates), texture(Texture2, OutTextureCoordinates), 0.2);
+    if (abs(FragmentPosition.y - 0.5) < EPSILON) { // Top
+        FragColor = texture(Top, OutTextureCoordinates);
+    } else if (abs(FragmentPosition.y + 0.5) < EPSILON) { // Bottom
+        FragColor = texture(Bottom, OutTextureCoordinates);
+    } else if (abs(FragmentPosition.z - 0.5) < EPSILON) { // Front
+        FragColor = texture(Front, OutTextureCoordinates);
+    } else if (abs(FragmentPosition.z + 0.5) < EPSILON) { // Back
+        FragColor = texture(Back, OutTextureCoordinates);
+    } else if (abs(FragmentPosition.x + 0.5) < EPSILON) { // Left
+        FragColor = texture(Left, OutTextureCoordinates);
+    } else if (abs(FragmentPosition.x - 0.5) < EPSILON) { // Right
+        FragColor = texture(Right, OutTextureCoordinates);
+    } else {
+        FragColor = texture(Default, OutTextureCoordinates); // Use a default texture in case of no match
+    }
 }
 )";
