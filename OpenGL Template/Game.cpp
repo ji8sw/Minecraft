@@ -11,10 +11,51 @@ unsigned int FragmentShader;
 unsigned int ShaderProgram;
 bool WireframeMode = false;
 int ExistingTextures = 0;
+glm::vec3 CameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+float DeltaTime = 0.0f;
+float LastFrame = 0.0f;
+float CursorX = 1920 / 2, CursorY = 1080 / 2;
+bool FirstMouse = true;
+float CameraYaw = -90.0f, CameraPitch = 0.0f;
 
-void WindowSizeChanged(GLFWwindow* window, int NewWidth, int NewHeight)
+void WindowSizeChanged(GLFWwindow* Window, int NewWidth, int NewHeight)
 {
 	glViewport(0, 0, NewWidth, NewHeight);
+}
+
+void MouseMoved(GLFWwindow* Window, double NewXPosition, double NewYPosition)
+{
+	if (FirstMouse)
+	{
+		CursorX = NewXPosition;
+		CursorY = NewYPosition;
+		FirstMouse = false;
+	}
+
+	float XOffset = NewXPosition - CursorX;
+	float YOffset = CursorY - NewYPosition; // reversed since y-coordinates range from bottom to top
+	CursorX = NewXPosition;
+	CursorY = NewYPosition;
+
+	const float Sensitivity = 0.05f;
+	XOffset *= Sensitivity;
+	YOffset *= Sensitivity;
+
+	CameraYaw += XOffset;
+	CameraPitch += YOffset;
+
+	if (CameraPitch > 89.0f)
+		CameraPitch = 89.0f;
+	if (CameraPitch < -89.0f)
+		CameraPitch = -89.0f;
+
+	glm::vec3 Front;
+	Front.x = cos(glm::radians(CameraYaw)) * cos(glm::radians(CameraPitch));
+	Front.y = sin(glm::radians(CameraPitch));
+	Front.z = sin(glm::radians(CameraYaw)) * cos(glm::radians(CameraPitch));
+	CameraFront = glm::normalize(Front);
 }
 
 bool InitializeGL(int Major = 3, int Minor = 3)
@@ -35,7 +76,9 @@ bool MakeWindow(int Width = 1920, int Height = 1080, std::string Title = "Minecr
 	glewInit();
 	glViewport(0, 0, Width, Height);
 	glfwSetFramebufferSizeCallback(Window, WindowSizeChanged);
+	glfwSetCursorPosCallback(Window, MouseMoved);
 	glEnable(GL_DEPTH_TEST);
+	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
 }
 
@@ -92,6 +135,7 @@ unsigned int CreateShaderProgram(std::vector<unsigned int> Shaders)
 	return NewShaderProgram;
 }
 
+float CameraSpeed = 0.05f;
 void HandleInput()
 {
 	if (glfwGetKey(Window, GLFW_KEY_X) == GLFW_PRESS)
@@ -99,6 +143,17 @@ void HandleInput()
 		WireframeMode = !WireframeMode;
 		glPolygonMode(GL_FRONT_AND_BACK, WireframeMode ? GL_LINE : GL_FILL);
 	}
+
+	CameraSpeed = 5.0f * DeltaTime;
+
+	if (glfwGetKey(Window, GLFW_KEY_W) == GLFW_PRESS)
+		CameraPosition += CameraSpeed * CameraFront;
+	if (glfwGetKey(Window, GLFW_KEY_S) == GLFW_PRESS)
+		CameraPosition -= CameraSpeed * CameraFront;
+	if (glfwGetKey(Window, GLFW_KEY_A) == GLFW_PRESS)
+		CameraPosition -= glm::normalize(glm::cross(CameraFront, CameraUp)) * CameraSpeed;
+	if (glfwGetKey(Window, GLFW_KEY_D) == GLFW_PRESS)
+		CameraPosition += glm::normalize(glm::cross(CameraFront, CameraUp)) * CameraSpeed;
 }
 
 unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR, int Smoothing = GL_LINEAR, bool FlipVertically = true)
@@ -150,6 +205,9 @@ int main()
 
 	while (!glfwWindowShouldClose(Window))
 	{
+		float CurrentFrame = glfwGetTime();
+		DeltaTime = CurrentFrame - LastFrame;
+		LastFrame = CurrentFrame;
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		HandleInput();
@@ -161,16 +219,12 @@ int main()
 
 		glUseProgram(ShaderProgram);
 
-		glm::mat4 Model      = glm::mat4(1.0f);
 		glm::mat4 View		 = glm::mat4(1.0f);
 		glm::mat4 Projection = glm::mat4(1.0f);
-		Model = glm::rotate(Model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
-		View = glm::translate(View, glm::vec3(0.0f, 0.0f, -3.0f));
+		View = glm::lookAt(CameraPosition, CameraPosition + CameraFront, CameraUp);
 		Projection = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
 
-		int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
 		int ViewLocation = glGetUniformLocation(ShaderProgram, "View");
-		glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
 		glUniformMatrix4fv(ViewLocation, 1, GL_FALSE, &View[0][0]);
 		int ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
 		glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, glm::value_ptr(Projection));
