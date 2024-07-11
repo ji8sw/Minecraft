@@ -230,6 +230,14 @@ void CheckAdjacentBlocks(const std::vector<std::vector<std::vector<Block>>>& Blo
 	// Check the bottom side
 	if (Position.y - 1 >= 0 && Blocks[Position.x][Position.y - 1][Position.z].Base.Name != "Air")
 		block->DiscardBottom = true;
+
+	// Check the front side
+	if ((Position.z + 1) < WorldWidth && Blocks[Position.x][Position.y][Position.z + 1].Base.Name != "Air")
+		block->DiscardFront = true;
+
+	// Check the back side
+	if ((Position.z - 1) > 0 && Blocks[Position.x][Position.y][Position.z - 1].Base.Name != "Air")
+		block->DiscardBack = true;
 }
 
 int main()
@@ -264,6 +272,9 @@ int main()
 	if (!Cobble.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
+	BlockBase Air = BlockBase();
+	Air.Name = "Air";
+
 	unsigned int WorldWidth = 10, WorldHeight = 10, WorldDepth = 10;
 	std::vector<std::vector<std::vector<Block>>> Blocks(WorldWidth, std::vector<std::vector<Block>>(WorldHeight, std::vector<Block>(WorldDepth)));
 
@@ -275,9 +286,20 @@ int main()
 					NewBlock.Base = Grass;
 				else if (Y <= 1) // bottom 2 blocks
 					NewBlock.Base = Cobble;
+				else if (X == 5 && Y == 5 && Z == 5) // example empty block usage
+					NewBlock.Base = Air;
 				else // all other blocks in the middle
 					NewBlock.Base = Dirt;
+				NewBlock.Matrix = glm::translate(glm::mat4(1.0f), glm::vec3(X, Y, Z));
 				Blocks[X][Y][Z] = NewBlock;
+			}
+		}
+	}
+
+	for (unsigned int X = 0; X < WorldWidth; X++) {
+		for (unsigned int Y = 0; Y < WorldHeight; Y++) {
+			for (unsigned int Z = 0; Z < WorldDepth; Z++) {
+				CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &Blocks[X][Y][Z]);
 			}
 		}
 	}
@@ -314,23 +336,22 @@ int main()
 			for (unsigned int Y = 0; Y < Blocks[X].size(); Y++) {
 				for (unsigned int Z = 0; Z < Blocks[X][Y].size(); Z++) {
 					Block* ThisBlock = &Blocks[X][Y][Z];
-					glm::mat4 Model = glm::mat4(1.0f);
-					Model = glm::translate(Model, glm::vec3(X, Y, Z));
-					Model = glm::scale(Model, glm::vec3(1.001f));
-					int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
-					glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
-					int DiscardsLocation = glGetUniformLocation(ShaderProgram, "Discards");
-					CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), ThisBlock);
-					int Discards = 
-						(ThisBlock->DiscardTop ? 1 : 0) |
-						(ThisBlock->DiscardBottom ? 2 : 0) |
-						(ThisBlock->DiscardFront ? 4 : 0) |
-						(ThisBlock->DiscardBack ? 8 : 0) |
-						(ThisBlock->DiscardLeft ? 16 : 0) |
-						(ThisBlock->DiscardRight ? 32 : 0);
-					glUniform1i(DiscardsLocation, Discards);
+					glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Model"), 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix));
 
-					ThisBlock->Base.BindTextures(ShaderProgram);
+					if (ThisBlock->Base.Name != "Air") // normal block
+					{
+						int DiscardsLocation = glGetUniformLocation(ShaderProgram, "Discards");
+						int Discards =
+							(ThisBlock->DiscardTop ? 1 : 0) |
+							(ThisBlock->DiscardBottom ? 2 : 0) |
+							(ThisBlock->DiscardFront ? 4 : 0) |
+							(ThisBlock->DiscardBack ? 8 : 0) |
+							(ThisBlock->DiscardLeft ? 16 : 0) |
+							(ThisBlock->DiscardRight ? 32 : 0);
+						glUniform1i(DiscardsLocation, Discards);
+
+						ThisBlock->Base.BindTextures(ShaderProgram);
+					}
 
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 				}

@@ -110,6 +110,7 @@ struct Block {
     bool DiscardBack = false;
     bool DiscardLeft = false;
     bool DiscardRight = false;
+    glm::mat4 Matrix;
 };
 
 extern const char* StandardVertexShaderSource;
