@@ -216,27 +216,27 @@ void CheckAdjacentBlocks(const std::vector<std::vector<std::vector<Block>>>& Blo
 	block->DiscardTop = block->DiscardBottom = block->DiscardFront = block->DiscardBack = block->DiscardLeft = block->DiscardRight = false;
 
 	// Check the right side
-	if ((Position.x + 1) < WorldWidth && Blocks[Position.x + 1][Position.y][Position.z].Base.Name != "Air")
+	if ((Position.x + 1) < WorldWidth && Blocks[Position.x + 1][Position.y][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardRight = true;
 
 	// Check the left side
-	if (Position.x - 1 >= 0 && Blocks[Position.x - 1][Position.y][Position.z].Base.Name != "Air")
+	if (Position.x - 1 >= 0 && Blocks[Position.x - 1][Position.y][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardLeft = true;
 
 	// Check the top side
-	if ((Position.y + 1) < WorldHeight && Blocks[Position.x][Position.y + 1][Position.z].Base.Name != "Air")
+	if ((Position.y + 1) < WorldHeight && Blocks[Position.x][Position.y + 1][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardTop = true;
 
 	// Check the bottom side
-	if (Position.y - 1 >= 0 && Blocks[Position.x][Position.y - 1][Position.z].Base.Name != "Air")
+	if (Position.y - 1 >= 0 && Blocks[Position.x][Position.y - 1][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardBottom = true;
 
 	// Check the front side
-	if ((Position.z + 1) < WorldWidth && Blocks[Position.x][Position.y][Position.z + 1].Base.Name != "Air")
+	if ((Position.z + 1) < WorldWidth && Blocks[Position.x][Position.y][Position.z + 1].Base.Catagory != BlockCatagory::Air)
 		block->DiscardFront = true;
 
 	// Check the back side
-	if ((Position.z - 1) > 0 && Blocks[Position.x][Position.y][Position.z - 1].Base.Name != "Air")
+	if ((Position.z - 1) >= 0 && Blocks[Position.x][Position.y][Position.z - 1].Base.Catagory != BlockCatagory::Air)
 		block->DiscardBack = true;
 }
 
@@ -274,8 +274,9 @@ int main()
 
 	BlockBase Air = BlockBase();
 	Air.Name = "Air";
+	Air.Catagory = BlockCatagory::Air;
 
-	unsigned int WorldWidth = 10, WorldHeight = 10, WorldDepth = 10;
+	unsigned int WorldWidth = 50, WorldHeight = 10, WorldDepth = 50;
 	std::vector<std::vector<std::vector<Block>>> Blocks(WorldWidth, std::vector<std::vector<Block>>(WorldHeight, std::vector<Block>(WorldDepth)));
 
 	for (unsigned int X = 0; X < WorldWidth; X++) {
@@ -299,13 +300,16 @@ int main()
 	for (unsigned int X = 0; X < WorldWidth; X++) {
 		for (unsigned int Y = 0; Y < WorldHeight; Y++) {
 			for (unsigned int Z = 0; Z < WorldDepth; Z++) {
-				CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &Blocks[X][Y][Z]);
+				if (Blocks[X][Y][Z].Base.Catagory != BlockCatagory::Air)
+					CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &Blocks[X][Y][Z]);
 			}
 		}
 	}
 
 	LastTime = glfwGetTime();
 	glfwSwapInterval(0);
+	glm::mat4 View = glm::mat4(1.0f);
+	glm::mat4 Projection = glm::mat4(1.0f);
 	while (!glfwWindowShouldClose(Window))
 	{
 		double CurrentTime = glfwGetTime();
@@ -317,15 +321,11 @@ int main()
 
 		glUseProgram(ShaderProgram);
 
-		glm::mat4 View		 = glm::mat4(1.0f);
-		glm::mat4 Projection = glm::mat4(1.0f);
 		View = glm::lookAt(CameraPosition, CameraPosition + CameraFront, CameraUp);
 		Projection = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
 
-		int ViewLocation = glGetUniformLocation(ShaderProgram, "View");
-		glUniformMatrix4fv(ViewLocation, 1, GL_FALSE, &View[0][0]);
-		int ProjectionLocation = glGetUniformLocation(ShaderProgram, "Projection");
-		glUniformMatrix4fv(ProjectionLocation, 1, GL_FALSE, glm::value_ptr(Projection));
+		glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "View"), 1, GL_FALSE, &View[0][0]);
+		glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Projection"), 1, GL_FALSE, glm::value_ptr(Projection));
 
 		glBindVertexArray(VAO);
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -338,17 +338,15 @@ int main()
 					Block* ThisBlock = &Blocks[X][Y][Z];
 					glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Model"), 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix));
 
-					if (ThisBlock->Base.Name != "Air") // normal block
+					if (ThisBlock->Base.Catagory != BlockCatagory::Air) // normal block
 					{
-						int DiscardsLocation = glGetUniformLocation(ShaderProgram, "Discards");
-						int Discards =
+						glUniform1i(glGetUniformLocation(ShaderProgram, "Discards"), 
 							(ThisBlock->DiscardTop ? 1 : 0) |
 							(ThisBlock->DiscardBottom ? 2 : 0) |
 							(ThisBlock->DiscardFront ? 4 : 0) |
 							(ThisBlock->DiscardBack ? 8 : 0) |
 							(ThisBlock->DiscardLeft ? 16 : 0) |
-							(ThisBlock->DiscardRight ? 32 : 0);
-						glUniform1i(DiscardsLocation, Discards);
+							(ThisBlock->DiscardRight ? 32 : 0));
 
 						ThisBlock->Base.BindTextures(ShaderProgram);
 					}

@@ -71,7 +71,6 @@ inline const char* ReadFile(const char* Path)
 unsigned int CreateTexture(const char* Path, int Type = GL_RGBA, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true);
 
 struct Texture {
-    std::string Name;
     std::string FilePath;
     unsigned int GLUID;
     unsigned int TUID;
@@ -79,8 +78,15 @@ struct Texture {
     bool Create();
 };
 
+enum BlockCatagory {
+    NormalPlaced,
+    NormalNatural,
+    Air
+};
+
 struct BlockBase {
     std::string Name;
+    BlockCatagory Catagory = BlockCatagory::NormalNatural;
 
     Texture TopFaceTexture;
     Texture BottomFaceTexture;
@@ -93,9 +99,9 @@ struct BlockBase {
 
     bool CreateTextures(unsigned int ShaderProgram);
 
-    void FillTextures(std::string Names[4], std::string Paths[4]);
+    void FillTextures(std::string Paths[4]);
 
-    void FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]); // create 3 textures: top, bottom, sides
+    void FillTexturesStandardBlock(std::string Paths[2]); // create 3 textures: top, bottom, sides
 
     void FillTexturesStandardBlockByPaths(std::string Paths[2]); // create 3 textures: top, bottom, sides
 

@@ -8,10 +8,7 @@ bool Texture::Create()
     if (Created) return true;
     GLUID = CreateTexture(FilePath.c_str());
     if (GLUID == -1)
-    {
-        std::cout << "GLUID == -1 for texture: " << this->Name << std::endl;
         return false;
-    }
     Created = true;
     TUID = ExistingTextures + GL_TEXTURE0;
     ExistingTextures++;
@@ -29,8 +26,6 @@ bool BlockBase::CreateTextures(unsigned int ShaderProgram)
 
 void BlockBase::BindTextures(unsigned int ShaderProgram)
 {
-    glUseProgram(ShaderProgram);
-
     glActiveTexture(TopFaceTexture.TUID);
     glBindTexture(GL_TEXTURE_2D, TopFaceTexture.GLUID);
     glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), TopFaceTexture.TUID - GL_TEXTURE0);
@@ -56,45 +51,36 @@ void BlockBase::BindTextures(unsigned int ShaderProgram)
     glUniform1i(glGetUniformLocation(ShaderProgram, "Right"), RightFaceTexture.TUID - GL_TEXTURE0);
 }
 
-void BlockBase::FillTextures(std::string Names[4], std::string Paths[4])
+void BlockBase::FillTextures(std::string Paths[4])
 {
     TopFaceTexture = Texture();
-    TopFaceTexture.Name = Names[0];
     TopFaceTexture.FilePath = Paths[0];
 
     BottomFaceTexture = Texture();
-    BottomFaceTexture.Name = Names[1];
     BottomFaceTexture.FilePath = Paths[1];
 
     FrontFaceTexture = Texture();
-    FrontFaceTexture.Name = Names[2];
     FrontFaceTexture.FilePath = Paths[2];
 
     BackFaceTexture = Texture();
-    BackFaceTexture.Name = Names[3];
     BackFaceTexture.FilePath = Paths[3];
 
     LeftFaceTexture = Texture();
-    LeftFaceTexture.Name = Names[4];
     LeftFaceTexture.FilePath = Paths[4];
 
     RightFaceTexture = Texture();
-    RightFaceTexture.Name = Names[5];
     RightFaceTexture.FilePath = Paths[5];
 }
 
-void BlockBase::FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]) // create 3 textures: top, bottom, sides
+void BlockBase::FillTexturesStandardBlock(std::string Paths[2]) // create 3 textures: top, bottom, sides
 {
     TopFaceTexture = Texture();
-    TopFaceTexture.Name = Names[0];
     TopFaceTexture.FilePath = Paths[0];
 
     BottomFaceTexture = Texture();
-    BottomFaceTexture.Name = Names[1];
     BottomFaceTexture.FilePath = Paths[1];
 
     FrontFaceTexture = Texture();
-    FrontFaceTexture.Name = Names[2];
     FrontFaceTexture.FilePath = Paths[2];
 
     BackFaceTexture = FrontFaceTexture;
@@ -105,15 +91,12 @@ void BlockBase::FillTexturesStandardBlock(std::string Names[2], std::string Path
 void BlockBase::FillTexturesStandardBlockByPaths(std::string Paths[2]) // create 3 textures: top, bottom, sides
 {
     TopFaceTexture = Texture();
-    TopFaceTexture.Name = Paths[0];
     TopFaceTexture.FilePath = Paths[0];
 
     BottomFaceTexture = Texture();
-    BottomFaceTexture.Name = Paths[1];
     BottomFaceTexture.FilePath = Paths[1];
 
     FrontFaceTexture = Texture();
-    FrontFaceTexture.Name = Paths[2];
     FrontFaceTexture.FilePath = Paths[2];
 
     BackFaceTexture = FrontFaceTexture;
