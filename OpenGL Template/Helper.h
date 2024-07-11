@@ -1,4 +1,6 @@
 #pragma once
+#ifndef HELPER
+#define HELPER
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -9,62 +11,51 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <map>
+#include <GL\glew.h>
+#include <GLFW/glfw3.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 enum ExitCodes {
 	Success = 0,
 	Error = 1
 };
 
-float RectangleVertices[] =
-{
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+class imGUI {
+public:
+    void InitializeImGUI(GLFWwindow* Window)
+    {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& IO = ImGui::GetIO(); (void)IO;
+        ImGui::StyleColorsDark();
+        ImGui_ImplGlfw_InitForOpenGL(Window, true);
+        ImGui_ImplOpenGL3_Init("#version 330");
+    }
 
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    void StartFrame()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+    }
 
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    void EndFrame()
+    {
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
 
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    void StopImGUI()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
 };
-
-unsigned int RectangleIndices[] =
-{
-	0, 1, 3,   // first triangle
-	1, 2, 3    // second triangle
-};
+inline imGUI ImGUIManager;
 
 inline const char* ReadFile(const char* Path)
 {
@@ -77,63 +68,37 @@ inline const char* ReadFile(const char* Path)
 	return Buffer.str().c_str();;
 }
 
-const char* StandardVertexShaderSource =
-R"(
-#version 330 core
-layout(location = 0) in vec3 VertexPosition;
-layout(location = 1) in vec2 TextureCoordinates;
+unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true);
 
-out vec3 FragmentPosition;
-out vec2 OutTextureCoordinates;
-
-uniform mat4 Model;
-uniform mat4 View;
-uniform mat4 Projection;
-
-const float EPSILON = 0.01;
-
-void main()
-{
-    FragmentPosition = VertexPosition;
-	gl_Position = Projection * View * Model * vec4(VertexPosition, 1.0);
-
-    OutTextureCoordinates = TextureCoordinates;
+struct Texture {
+    std::string Name;
+    std::string FilePath;
+    unsigned int GLUID;
+    bool Created = false;
+    bool Create();
 };
-)";
 
-const char* StandardFragmentShaderSource =
-R"(
-#version 330 core
-out vec4 FragColor;
+struct Block {
+    std::string Name;
 
-in vec3 FragmentPosition;
-in vec2 OutTextureCoordinates;
+    Texture TopFaceTexture;
+    Texture BottomFaceTexture;
+    Texture FrontFaceTexture;
+    Texture BackFaceTexture;
+    Texture LeftFaceTexture;
+    Texture RightFaceTexture;
 
-uniform sampler2D Top;
-uniform sampler2D Bottom;
-uniform sampler2D Front;
-uniform sampler2D Back;
-uniform sampler2D Left;
-uniform sampler2D Right;
+    bool CreateTextures(unsigned int ShaderProgram);
 
-const float EPSILON = 0.01;
+    void FillTextures(std::string Names[4], std::string Paths[4]);
 
-void main()
-{
-    if (abs(FragmentPosition.y - 0.5) < EPSILON) { // Top
-        FragColor = texture(Top, OutTextureCoordinates);
-    } else if (abs(FragmentPosition.y + 0.5) < EPSILON) { // Bottom
-        FragColor = texture(Bottom, OutTextureCoordinates);
-    } else if (abs(FragmentPosition.z - 0.5) < EPSILON) { // Front
-        FragColor = texture(Front, OutTextureCoordinates);
-    } else if (abs(FragmentPosition.z + 0.5) < EPSILON) { // Back
-        FragColor = texture(Back, OutTextureCoordinates);
-    } else if (abs(FragmentPosition.x + 0.5) < EPSILON) { // Left
-        FragColor = texture(Right, vec2(OutTextureCoordinates.y, OutTextureCoordinates.x));
-    } else if (abs(FragmentPosition.x - 0.5) < EPSILON) { // Right
-        FragColor = texture(Right, vec2(OutTextureCoordinates.y, OutTextureCoordinates.x));
-    } else {
-        FragColor = vec4(vec3(255, 0, 255), 1.0); // Pink
-    }
-}
-)";
+    void FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]); // create 3 textures: top, bottom, sides
+
+    void FillTexturesStandardBlockByPaths(std::string Paths[2]); // create 3 textures: top, bottom, sides
+};
+
+extern const char* StandardVertexShaderSource;
+
+extern const char* StandardFragmentShaderSource;
+
+#endif

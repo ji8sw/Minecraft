@@ -1,8 +1,49 @@
-#include <GL\glew.h>
-#include <GLFW/glfw3.h>
 #include "Helper.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+
+float RectangleVertices[] =
+{
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
 
 GLFWwindow* Window = NULL;
 unsigned int VBO, VAO, EBO;
@@ -14,10 +55,10 @@ int ExistingTextures = 0;
 glm::vec3 CameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-float DeltaTime = 0.0f;
-float LastFrame = 0.0f;
+double LastTime, FPS, MS;
+int Count = 0;
 float CursorX = 1920 / 2, CursorY = 1080 / 2;
-bool FirstMouse = true;
+bool FirstMouse = true, InMenu = false;
 float CameraYaw = -90.0f, CameraPitch = 0.0f;
 
 void WindowSizeChanged(GLFWwindow* Window, int NewWidth, int NewHeight)
@@ -39,23 +80,26 @@ void MouseMoved(GLFWwindow* Window, double NewXPosition, double NewYPosition)
 	CursorX = NewXPosition;
 	CursorY = NewYPosition;
 
-	const float Sensitivity = 0.05f;
-	XOffset *= Sensitivity;
-	YOffset *= Sensitivity;
+	if (!InMenu)
+	{
+		const float Sensitivity = 0.05f;
+		XOffset *= Sensitivity;
+		YOffset *= Sensitivity;
 
-	CameraYaw += XOffset;
-	CameraPitch += YOffset;
+		CameraYaw += XOffset;
+		CameraPitch += YOffset;
 
-	if (CameraPitch > 89.0f)
-		CameraPitch = 89.0f;
-	if (CameraPitch < -89.0f)
-		CameraPitch = -89.0f;
+		if (CameraPitch > 89.0f)
+			CameraPitch = 89.0f;
+		if (CameraPitch < -89.0f)
+			CameraPitch = -89.0f;
 
-	glm::vec3 Front;
-	Front.x = cos(glm::radians(CameraYaw)) * cos(glm::radians(CameraPitch));
-	Front.y = sin(glm::radians(CameraPitch));
-	Front.z = sin(glm::radians(CameraYaw)) * cos(glm::radians(CameraPitch));
-	CameraFront = glm::normalize(Front);
+		glm::vec3 Front;
+		Front.x = cos(glm::radians(CameraYaw)) * cos(glm::radians(CameraPitch));
+		Front.y = sin(glm::radians(CameraPitch));
+		Front.z = sin(glm::radians(CameraYaw)) * cos(glm::radians(CameraPitch));
+		CameraFront = glm::normalize(Front);
+	}
 }
 
 bool InitializeGL(int Major = 3, int Minor = 3)
@@ -79,6 +123,7 @@ bool MakeWindow(int Width = 1920, int Height = 1080, std::string Title = "Minecr
 	glfwSetCursorPosCallback(Window, MouseMoved);
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	ImGUIManager.InitializeImGUI(Window);
 	return true;
 }
 
@@ -144,7 +189,7 @@ void HandleInput()
 		glPolygonMode(GL_FRONT_AND_BACK, WireframeMode ? GL_LINE : GL_FILL);
 	}
 
-	CameraSpeed = 5.0f * DeltaTime;
+	CameraSpeed = 0.0125f * MS;
 
 	if (glfwGetKey(Window, GLFW_KEY_W) == GLFW_PRESS)
 		CameraPosition += CameraSpeed * CameraFront;
@@ -154,30 +199,12 @@ void HandleInput()
 		CameraPosition -= glm::normalize(glm::cross(CameraFront, CameraUp)) * CameraSpeed;
 	if (glfwGetKey(Window, GLFW_KEY_D) == GLFW_PRESS)
 		CameraPosition += glm::normalize(glm::cross(CameraFront, CameraUp)) * CameraSpeed;
-}
 
-unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true)
-{
-	stbi_set_flip_vertically_on_load(FlipVertically);
-	unsigned int NewTexture;
-	glGenTextures(1, &NewTexture);
-	glBindTexture(GL_TEXTURE_2D, NewTexture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, TextureRepeat);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, TextureRepeat);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MipmapSmoothing);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, Smoothing);
-
-	int Width, Height, ChannelCount;
-	unsigned char* Data = stbi_load(std::format("Textures/{}", Path).c_str(), &Width, &Height, &ChannelCount, 0);
-
-	if (!Data)
-		return -1;
-
-	glTexImage2D(GL_TEXTURE_2D, 0, Type, Width, Height, 0, Type, GL_UNSIGNED_BYTE, Data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(Data);
-	
-	return NewTexture;
+	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	{
+		InMenu = !InMenu;
+		glfwSetInputMode(Window, GLFW_CURSOR, InMenu ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+	}
 }
 
 int main()
@@ -191,41 +218,29 @@ int main()
 
 	CreateBuffers();
 
-	unsigned int GrassTopTexture = CreateTexture("GrassTop.png");
-	if (GrassTopTexture == -1)
+	Block Grass;
+	Grass.Name = "Grass";
+	std::string Pathes[3] = { "GrassTop.png", "Dirt.png", "GrassSide.png" };
+	Grass.FillTexturesStandardBlockByPaths(Pathes);
+	if (!Grass.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
-	unsigned int DirtTexture = CreateTexture("Dirt.png");
-	if (DirtTexture == -1)
-		return ExitCodes::Error;
-
-	unsigned int GrassSideTexture = CreateTexture("GrassSide.png");
-	if (GrassSideTexture == -1)
-		return ExitCodes::Error;
-
-	glUseProgram(ShaderProgram);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), 0);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Bottom"), 1);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Front"), 2);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Back"), 2);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Left"), 2);
-	glUniform1i(glGetUniformLocation(ShaderProgram, "Right"), 2);
-
+	LastTime = glfwGetTime();
 	while (!glfwWindowShouldClose(Window))
 	{
-		float CurrentFrame = glfwGetTime();
-		DeltaTime = CurrentFrame - LastFrame;
-		LastFrame = CurrentFrame;
+		double CurrentTime = glfwGetTime();
+		Count++;
+		
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		HandleInput();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, GrassTopTexture);
+		glBindTexture(GL_TEXTURE_2D, Grass.TopFaceTexture.GLUID);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, DirtTexture);
+		glBindTexture(GL_TEXTURE_2D, Grass.BottomFaceTexture.GLUID);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, GrassSideTexture);
+		glBindTexture(GL_TEXTURE_2D, Grass.RightFaceTexture.GLUID);
 
 		glUseProgram(ShaderProgram);
 
@@ -259,10 +274,31 @@ int main()
 			}
 		}
 
+		ImGUIManager.StartFrame();
+
+		ImGui::Begin("Minecraft | Statistics");
+
+		if (CurrentTime - LastTime >= 0.1)
+		{
+			FPS = Count / (CurrentTime - LastTime);
+			MS = (1.0 / FPS) * 1000;
+			FPS = std::round(FPS * 10) / 10;
+			MS = std::round(MS * 10) / 10;
+			Count = 0;
+			LastTime = CurrentTime;
+		}
+
+		ImGui::Text(std::format("{} FPS", FPS).c_str());
+		ImGui::Text(std::format("{} MS", MS).c_str());
+		ImGui::End();
+
+		ImGUIManager.EndFrame();
+
 		glfwSwapBuffers(Window);
 		glfwPollEvents();
 	}
 
+	ImGUIManager.StopImGUI();
 	glfwTerminate();
 	glDeleteShader(VertexShader);
 	glDeleteShader(FragmentShader);

@@ -93,6 +93,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>A:\VS Projects\_Minecraft\OpenGL Template\Template\include\imgui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -109,6 +110,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>A:\VS Projects\_Minecraft\OpenGL Template\Template\include\imgui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,6 +128,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>A:\VS Projects\_Minecraft\OpenGL Template\Template\include\imgui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -146,6 +149,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>A:\VS Projects\_Minecraft\OpenGL Template\Template\include\imgui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,9 +162,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui_demo.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="Template\include\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Helper.h" />
+    <ClInclude Include="Template\include\imgui\imconfig.h" />
+    <ClInclude Include="Template\include\imgui\imgui.h" />
+    <ClInclude Include="Template\include\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="Template\include\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="Template\include\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="Template\include\imgui\imgui_internal.h" />
+    <ClInclude Include="Template\include\imgui\imstb_rectpack.h" />
+    <ClInclude Include="Template\include\imgui\imstb_textedit.h" />
+    <ClInclude Include="Template\include\imgui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="StandardFragment.glsl" />
