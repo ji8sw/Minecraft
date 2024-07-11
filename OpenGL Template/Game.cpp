@@ -52,7 +52,7 @@ unsigned int FragmentShader;
 unsigned int ShaderProgram;
 bool WireframeMode = false;
 int ExistingTextures = 0;
-glm::vec3 CameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 CameraPosition = glm::vec3(0.0f, 0.0f, 15.0f);
 glm::vec3 CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 double LastTime, FPS, MS;
@@ -122,6 +122,7 @@ bool MakeWindow(int Width = 1920, int Height = 1080, std::string Title = "Minecr
 	glfwSetFramebufferSizeCallback(Window, WindowSizeChanged);
 	glfwSetCursorPosCallback(Window, MouseMoved);
 	glEnable(GL_DEPTH_TEST);
+	if (!InMenu)
 	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	ImGUIManager.InitializeImGUI(Window);
 	return true;
@@ -214,23 +215,21 @@ void CheckAdjacentBlocks(const std::vector<std::vector<std::vector<Block>>>& Blo
 
 	block->DiscardTop = block->DiscardBottom = block->DiscardFront = block->DiscardBack = block->DiscardLeft = block->DiscardRight = false;
 
-	if (Position.x + 1 < WorldHeight) 
-		block->DiscardTop = true;
+	// Check the right side
+	if ((Position.x + 1) < WorldWidth && Blocks[Position.x + 1][Position.y][Position.z].Base.Name != "Air")
+		block->DiscardRight = true;
 
-	if (Position.y - 1 >= 0) 
-		block->DiscardBottom = true;
-
-	if (Position.z + 1 < WorldDepth) 
-		block->DiscardFront = true;
-
-	if (Position.z - 1 >= 0) 
-		block->DiscardBack = true;
-
-	if (Position.x - 1 >= 0) 
+	// Check the left side
+	if (Position.x - 1 >= 0 && Blocks[Position.x - 1][Position.y][Position.z].Base.Name != "Air")
 		block->DiscardLeft = true;
 
-	if (Position.x + 1 < WorldWidth) 
-		block->DiscardRight = true;
+	// Check the top side
+	if ((Position.y + 1) < WorldHeight && Blocks[Position.x][Position.y + 1][Position.z].Base.Name != "Air")
+		block->DiscardTop = true;
+
+	// Check the bottom side
+	if (Position.y - 1 >= 0 && Blocks[Position.x][Position.y - 1][Position.z].Base.Name != "Air")
+		block->DiscardBottom = true;
 }
 
 int main()
@@ -305,6 +304,7 @@ int main()
 					Block* ThisBlock = &Blocks[X][Y][Z];
 					glm::mat4 Model = glm::mat4(1.0f);
 					Model = glm::translate(Model, glm::vec3(X, Y, Z));
+					Model = glm::scale(Model, glm::vec3(1.001f));
 					int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
 					glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
 					int DiscardsLocation = glGetUniformLocation(ShaderProgram, "Discards");
@@ -326,6 +326,7 @@ int main()
 		ImGUIManager.StartFrame();
 
 		ImGui::Begin("Minecraft | Statistics");
+
 
 		if (CurrentTime - LastTime >= 0.1)
 		{
