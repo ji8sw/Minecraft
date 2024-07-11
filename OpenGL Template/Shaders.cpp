@@ -18,6 +18,7 @@ const float EPSILON = 0.01;
 void main()
 {
     FragmentPosition = VertexPosition;
+
 	gl_Position = Projection * View * Model * vec4(VertexPosition, 1.0);
 
     OutTextureCoordinates = TextureCoordinates;
@@ -39,21 +40,36 @@ uniform sampler2D Back;
 uniform sampler2D Left;
 uniform sampler2D Right;
 
+uniform int Discards;
+
 const float EPSILON = 0.01;
 
 void main()
 {
+    bool DiscardTop = (Discards & 1) != 0;
+    bool DiscardBottom = (Discards & 2) != 0;
+    bool DiscardFront = (Discards & 4) != 0;
+    bool DiscardBack = (Discards & 8) != 0;
+    bool DiscardLeft = (Discards & 16) != 0;
+    bool DiscardRight = (Discards & 32) != 0;
+
     if (abs(FragmentPosition.y - 0.5) < EPSILON) { // Top
+        if (DiscardTop) discard;
         FragColor = texture(Top, OutTextureCoordinates);
     } else if (abs(FragmentPosition.y + 0.5) < EPSILON) { // Bottom
+        if (DiscardBottom) discard;
         FragColor = texture(Bottom, OutTextureCoordinates);
     } else if (abs(FragmentPosition.z - 0.5) < EPSILON) { // Front
+        if (DiscardFront) discard;
         FragColor = texture(Front, OutTextureCoordinates);
     } else if (abs(FragmentPosition.z + 0.5) < EPSILON) { // Back
+        if (DiscardBack) discard;
         FragColor = texture(Back, OutTextureCoordinates);
     } else if (abs(FragmentPosition.x + 0.5) < EPSILON) { // Left
+        if (DiscardLeft) discard;
         FragColor = texture(Right, vec2(OutTextureCoordinates.y, OutTextureCoordinates.x));
     } else if (abs(FragmentPosition.x - 0.5) < EPSILON) { // Right
+        if (DiscardRight) discard;
         FragColor = texture(Right, vec2(OutTextureCoordinates.y, OutTextureCoordinates.x));
     } else {
         FragColor = vec4(vec3(255, 0, 255), 1.0); // Pink

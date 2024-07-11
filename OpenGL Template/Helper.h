@@ -78,7 +78,7 @@ struct Texture {
     bool Create();
 };
 
-struct Block {
+struct BlockBase {
     std::string Name;
 
     Texture TopFaceTexture;
@@ -95,6 +95,16 @@ struct Block {
     void FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]); // create 3 textures: top, bottom, sides
 
     void FillTexturesStandardBlockByPaths(std::string Paths[2]); // create 3 textures: top, bottom, sides
+};
+
+struct Block {
+    BlockBase Base;
+    bool DiscardTop = false;
+    bool DiscardBottom = false;
+    bool DiscardFront = false;
+    bool DiscardBack = false;
+    bool DiscardLeft = false;
+    bool DiscardRight = false;
 };
 
 extern const char* StandardVertexShaderSource;

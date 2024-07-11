@@ -16,7 +16,7 @@ bool Texture::Create()
     return true;
 }
 
-bool Block::CreateTextures(unsigned int ShaderProgram)
+bool BlockBase::CreateTextures(unsigned int ShaderProgram)
 {
     if (!TopFaceTexture.Create() || !BottomFaceTexture.Create() || !FrontFaceTexture.Create() || !BackFaceTexture.Create() || !LeftFaceTexture.Create() || !RightFaceTexture.Create())
         return false;
@@ -32,7 +32,7 @@ bool Block::CreateTextures(unsigned int ShaderProgram)
     return true;
 }
 
-void Block::FillTextures(std::string Names[4], std::string Paths[4])
+void BlockBase::FillTextures(std::string Names[4], std::string Paths[4])
 {
     TopFaceTexture = Texture();
     TopFaceTexture.Name = Names[0];
@@ -59,7 +59,7 @@ void Block::FillTextures(std::string Names[4], std::string Paths[4])
     RightFaceTexture.FilePath = Paths[5];
 }
 
-void Block::FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]) // create 3 textures: top, bottom, sides
+void BlockBase::FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]) // create 3 textures: top, bottom, sides
 {
     TopFaceTexture = Texture();
     TopFaceTexture.Name = Names[0];
@@ -78,7 +78,7 @@ void Block::FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]
     RightFaceTexture = FrontFaceTexture;
 }
 
-void Block::FillTexturesStandardBlockByPaths(std::string Paths[2]) // create 3 textures: top, bottom, sides
+void BlockBase::FillTexturesStandardBlockByPaths(std::string Paths[2]) // create 3 textures: top, bottom, sides
 {
     TopFaceTexture = Texture();
     TopFaceTexture.Name = Paths[0];

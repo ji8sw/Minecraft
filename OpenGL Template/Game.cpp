@@ -207,6 +207,32 @@ void HandleInput()
 	}
 }
 
+void CheckAdjacentBlocks(const std::vector<std::vector<std::vector<Block>>>& Blocks, glm::vec3 Position, Block* block) {
+	int WorldWidth = Blocks.size();
+	int WorldHeight = Blocks[0].size();
+	int WorldDepth = Blocks[0][0].size();
+
+	block->DiscardTop = block->DiscardBottom = block->DiscardFront = block->DiscardBack = block->DiscardLeft = block->DiscardRight = false;
+
+	if (Position.x + 1 < WorldHeight) 
+		block->DiscardTop = true;
+
+	if (Position.y - 1 >= 0) 
+		block->DiscardBottom = true;
+
+	if (Position.z + 1 < WorldDepth) 
+		block->DiscardFront = true;
+
+	if (Position.z - 1 >= 0) 
+		block->DiscardBack = true;
+
+	if (Position.x - 1 >= 0) 
+		block->DiscardLeft = true;
+
+	if (Position.x + 1 < WorldWidth) 
+		block->DiscardRight = true;
+}
+
 int main()
 {
 	if (!InitializeGL() || !MakeWindow())
@@ -218,14 +244,28 @@ int main()
 
 	CreateBuffers();
 
-	Block Grass;
+	BlockBase Grass;
 	Grass.Name = "Grass";
 	std::string Pathes[3] = { "GrassTop.png", "Dirt.png", "GrassSide.png" };
 	Grass.FillTexturesStandardBlockByPaths(Pathes);
 	if (!Grass.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
+	unsigned int WorldWidth = 10, WorldHeight = 10, WorldDepth = 10;
+	std::vector<std::vector<std::vector<Block>>> Blocks(WorldWidth, std::vector<std::vector<Block>>(WorldHeight, std::vector<Block>(WorldDepth)));
+
+	for (unsigned int X = 0; X < WorldWidth; X++) {
+		for (unsigned int Y = 0; Y < WorldHeight; Y++) {
+			for (unsigned int Z = 0; Z < WorldDepth; Z++) {
+				Block NewBlock;
+				NewBlock.Base = Grass;
+				Blocks[X][Y][Z] = NewBlock;
+			}
+		}
+	}
+
 	LastTime = glfwGetTime();
+	glfwSwapInterval(0);
 	while (!glfwWindowShouldClose(Window))
 	{
 		double CurrentTime = glfwGetTime();
@@ -258,16 +298,25 @@ int main()
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glBindVertexArray(VAO);
-		for (unsigned int X = 0; X < 10; X++)
-		{
-			for (unsigned int Y = 0; Y < 10; Y++)
-			{
-				for (unsigned int Z = 0; Z < 10; Z++)
-				{
+
+		for (unsigned int X = 0; X < Blocks.size(); X++) {
+			for (unsigned int Y = 0; Y < Blocks[X].size(); Y++) {
+				for (unsigned int Z = 0; Z < Blocks[X][Y].size(); Z++) {
+					Block* ThisBlock = &Blocks[X][Y][Z];
 					glm::mat4 Model = glm::mat4(1.0f);
 					Model = glm::translate(Model, glm::vec3(X, Y, Z));
 					int ModelLocation = glGetUniformLocation(ShaderProgram, "Model");
 					glUniformMatrix4fv(ModelLocation, 1, GL_FALSE, glm::value_ptr(Model));
+					int DiscardsLocation = glGetUniformLocation(ShaderProgram, "Discards");
+					CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), ThisBlock);
+					int Discards = 
+						(ThisBlock->DiscardTop ? 1 : 0) |
+						(ThisBlock->DiscardBottom ? 2 : 0) |
+						(ThisBlock->DiscardFront ? 4 : 0) |
+						(ThisBlock->DiscardBack ? 8 : 0) |
+						(ThisBlock->DiscardLeft ? 16 : 0) |
+						(ThisBlock->DiscardRight ? 32 : 0);
+					glUniform1i(DiscardsLocation, Discards);
 
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 				}
