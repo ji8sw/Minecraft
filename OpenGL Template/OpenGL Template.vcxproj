@@ -167,6 +167,7 @@
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="Noise.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="Template\include\imgui\imgui.cpp" />
     <ClCompile Include="Template\include\imgui\imgui_demo.cpp" />
@@ -178,6 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Helper.h" />
+    <ClInclude Include="Noise.h" />
     <ClInclude Include="Template\include\imgui\imconfig.h" />
     <ClInclude Include="Template\include\imgui\imgui.h" />
     <ClInclude Include="Template\include\imgui\imgui_impl_glfw.h" />

@@ -276,21 +276,31 @@ int main()
 	Air.Name = "Air";
 	Air.Catagory = BlockCatagory::Air;
 
-	unsigned int WorldWidth = 50, WorldHeight = 10, WorldDepth = 50;
+	noise Noise;
+	std::vector<std::vector<double>> ChunkInfo = Noise.GenerateChunk(Noise.Perlin);
+
+	unsigned int WorldWidth = 16, WorldHeight = 16, WorldDepth = 16;
 	std::vector<std::vector<std::vector<Block>>> Blocks(WorldWidth, std::vector<std::vector<Block>>(WorldHeight, std::vector<Block>(WorldDepth)));
 
 	for (unsigned int X = 0; X < WorldWidth; X++) {
-		for (unsigned int Y = 0; Y < WorldHeight; Y++) {
-			for (unsigned int Z = 0; Z < WorldDepth; Z++) {
+		for (unsigned int Z = 0; Z < WorldDepth; Z++) {
+			int ColumnHeight = static_cast<int>((ChunkInfo[X][Z] + 1) * 0.5 * WorldHeight);
+
+			for (unsigned int Y = 0; Y < WorldHeight; ++Y) {
 				Block NewBlock;
-				if (Y == WorldHeight - 1) // top block
-					NewBlock.Base = Grass;
-				else if (Y <= 1) // bottom 2 blocks
-					NewBlock.Base = Cobble;
-				else if (X == 5 && Y == 5 && Z == 5) // example empty block usage
-					NewBlock.Base = Air;
-				else // all other blocks in the middle
-					NewBlock.Base = Dirt;
+				if (Y > ColumnHeight) {
+					NewBlock.Base = Air; // Above the height determined by noise
+				}
+				else if (Y == ColumnHeight) {
+					NewBlock.Base = Grass; // Top block at this height
+				}
+				else if (Y <= 1) {
+					NewBlock.Base = Cobble; // Bottom 2 blocks
+				}
+				else {
+					NewBlock.Base = Dirt; // All other blocks below the top
+				}
+
 				NewBlock.Matrix = glm::translate(glm::mat4(1.0f), glm::vec3(X, Y, Z));
 				Blocks[X][Y][Z] = NewBlock;
 			}
@@ -328,29 +338,23 @@ int main()
 		glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Projection"), 1, GL_FALSE, glm::value_ptr(Projection));
 
 		glBindVertexArray(VAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		glBindVertexArray(VAO);
 
 		for (unsigned int X = 0; X < Blocks.size(); X++) {
 			for (unsigned int Y = 0; Y < Blocks[X].size(); Y++) {
 				for (unsigned int Z = 0; Z < Blocks[X][Y].size(); Z++) {
 					Block* ThisBlock = &Blocks[X][Y][Z];
+					if (ThisBlock->Base.Catagory == BlockCatagory::Air) continue;
+
 					glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Model"), 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix));
+					glUniform1i(glGetUniformLocation(ShaderProgram, "Discards"),
+						(ThisBlock->DiscardTop ? 1 : 0) |
+						(ThisBlock->DiscardBottom ? 2 : 0) |
+						(ThisBlock->DiscardFront ? 4 : 0) |
+						(ThisBlock->DiscardBack ? 8 : 0) |
+						(ThisBlock->DiscardLeft ? 16 : 0) |
+						(ThisBlock->DiscardRight ? 32 : 0));
 
-					if (ThisBlock->Base.Catagory != BlockCatagory::Air) // normal block
-					{
-						glUniform1i(glGetUniformLocation(ShaderProgram, "Discards"), 
-							(ThisBlock->DiscardTop ? 1 : 0) |
-							(ThisBlock->DiscardBottom ? 2 : 0) |
-							(ThisBlock->DiscardFront ? 4 : 0) |
-							(ThisBlock->DiscardBack ? 8 : 0) |
-							(ThisBlock->DiscardLeft ? 16 : 0) |
-							(ThisBlock->DiscardRight ? 32 : 0));
-
-						ThisBlock->Base.BindTextures(ShaderProgram);
-					}
-
+					ThisBlock->Base.BindTextures(ShaderProgram);
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 				}
 			}
