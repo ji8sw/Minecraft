@@ -1,6 +1,7 @@
 #include "Helper.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+unsigned int ExistingTextures = 0;
 
 bool Texture::Create()
 {
@@ -12,6 +13,8 @@ bool Texture::Create()
         return false;
     }
     Created = true;
+    TUID = ExistingTextures + GL_TEXTURE0;
+    ExistingTextures++;
 
     return true;
 }
@@ -21,15 +24,36 @@ bool BlockBase::CreateTextures(unsigned int ShaderProgram)
     if (!TopFaceTexture.Create() || !BottomFaceTexture.Create() || !FrontFaceTexture.Create() || !BackFaceTexture.Create() || !LeftFaceTexture.Create() || !RightFaceTexture.Create())
         return false;
 
-    glUseProgram(ShaderProgram);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), 0);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Bottom"), 1);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Front"), 2);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Back"), 2);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Left"), 2);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Right"), 2);
-
     return true;
+}
+
+void BlockBase::BindTextures(unsigned int ShaderProgram)
+{
+    glUseProgram(ShaderProgram);
+
+    glActiveTexture(TopFaceTexture.TUID);
+    glBindTexture(GL_TEXTURE_2D, TopFaceTexture.GLUID);
+    glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), TopFaceTexture.TUID - GL_TEXTURE0);
+
+    glActiveTexture(BottomFaceTexture.TUID);
+    glBindTexture(GL_TEXTURE_2D, BottomFaceTexture.GLUID);
+    glUniform1i(glGetUniformLocation(ShaderProgram, "Bottom"), BottomFaceTexture.TUID - GL_TEXTURE0);
+
+    glActiveTexture(FrontFaceTexture.TUID);
+    glBindTexture(GL_TEXTURE_2D, FrontFaceTexture.GLUID);
+    glUniform1i(glGetUniformLocation(ShaderProgram, "Front"), FrontFaceTexture.TUID - GL_TEXTURE0);
+
+    glActiveTexture(BackFaceTexture.TUID);
+    glBindTexture(GL_TEXTURE_2D, BackFaceTexture.GLUID);
+    glUniform1i(glGetUniformLocation(ShaderProgram, "Back"), BackFaceTexture.TUID - GL_TEXTURE0);
+
+    glActiveTexture(LeftFaceTexture.TUID);
+    glBindTexture(GL_TEXTURE_2D, LeftFaceTexture.GLUID);
+    glUniform1i(glGetUniformLocation(ShaderProgram, "Left"), LeftFaceTexture.TUID - GL_TEXTURE0);
+
+    glActiveTexture(RightFaceTexture.TUID);
+    glBindTexture(GL_TEXTURE_2D, RightFaceTexture.GLUID);
+    glUniform1i(glGetUniformLocation(ShaderProgram, "Right"), RightFaceTexture.TUID - GL_TEXTURE0);
 }
 
 void BlockBase::FillTextures(std::string Names[4], std::string Paths[4])
@@ -95,6 +119,16 @@ void BlockBase::FillTexturesStandardBlockByPaths(std::string Paths[2]) // create
     BackFaceTexture = FrontFaceTexture;
     LeftFaceTexture = FrontFaceTexture;
     RightFaceTexture = FrontFaceTexture;
+}
+
+void BlockBase::FillTexturesFromBlock(BlockBase ToCopy)
+{
+    TopFaceTexture =    ToCopy.TopFaceTexture;
+    BottomFaceTexture = ToCopy.BottomFaceTexture;
+    FrontFaceTexture =  ToCopy.FrontFaceTexture;
+    BackFaceTexture =   ToCopy.BackFaceTexture;
+    LeftFaceTexture =   ToCopy.LeftFaceTexture;
+    RightFaceTexture =  ToCopy.RightFaceTexture;
 }
 
 unsigned int CreateTexture(const char* Path, int Type , int TextureRepeat, int MipmapSmoothing, int Smoothing, bool FlipVertically)

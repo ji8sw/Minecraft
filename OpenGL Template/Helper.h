@@ -68,12 +68,13 @@ inline const char* ReadFile(const char* Path)
 	return Buffer.str().c_str();;
 }
 
-unsigned int CreateTexture(const char* Path, int Type = GL_RGB, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true);
+unsigned int CreateTexture(const char* Path, int Type = GL_RGBA, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true);
 
 struct Texture {
     std::string Name;
     std::string FilePath;
     unsigned int GLUID;
+    unsigned int TUID;
     bool Created = false;
     bool Create();
 };
@@ -88,6 +89,8 @@ struct BlockBase {
     Texture LeftFaceTexture;
     Texture RightFaceTexture;
 
+    void BindTextures(unsigned int ShaderProgram);
+
     bool CreateTextures(unsigned int ShaderProgram);
 
     void FillTextures(std::string Names[4], std::string Paths[4]);
@@ -95,6 +98,8 @@ struct BlockBase {
     void FillTexturesStandardBlock(std::string Names[2], std::string Paths[2]); // create 3 textures: top, bottom, sides
 
     void FillTexturesStandardBlockByPaths(std::string Paths[2]); // create 3 textures: top, bottom, sides
+
+    void FillTexturesFromBlock(BlockBase ToCopy); // copy textures from another block
 };
 
 struct Block {

@@ -243,11 +243,25 @@ int main()
 
 	CreateBuffers();
 
-	BlockBase Grass;
+	BlockBase Grass = BlockBase();
 	Grass.Name = "Grass";
-	std::string Pathes[3] = { "GrassTop.png", "Dirt.png", "GrassSide.png" };
-	Grass.FillTexturesStandardBlockByPaths(Pathes);
+	std::string Paths[3] = { "GrassTop.png", "Dirt.png", "GrassSide.png" };
+	Grass.FillTexturesStandardBlockByPaths(Paths);
 	if (!Grass.CreateTextures(ShaderProgram))
+		return ExitCodes::Error;
+
+	BlockBase Dirt = BlockBase();
+	Dirt.Name = "Dirt";
+	std::string DirtPaths[3] = { "Dirt.png", "Dirt.png", "Dirt.png" };
+	Dirt.FillTexturesStandardBlockByPaths(DirtPaths);
+	if (!Dirt.CreateTextures(ShaderProgram))
+		return ExitCodes::Error;
+
+	BlockBase Cobble = BlockBase();
+	Cobble.Name = "Cobblestone";
+	std::string CobblePaths[3] = { "Cobblestone.png", "Cobblestone.png", "Cobblestone.png" };
+	Cobble.FillTexturesStandardBlockByPaths(CobblePaths);
+	if (!Cobble.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
 	unsigned int WorldWidth = 10, WorldHeight = 10, WorldDepth = 10;
@@ -257,7 +271,12 @@ int main()
 		for (unsigned int Y = 0; Y < WorldHeight; Y++) {
 			for (unsigned int Z = 0; Z < WorldDepth; Z++) {
 				Block NewBlock;
-				NewBlock.Base = Grass;
+				if (Y == WorldHeight - 1) // top block
+					NewBlock.Base = Grass;
+				else if (Y <= 1) // bottom 2 blocks
+					NewBlock.Base = Cobble;
+				else // all other blocks in the middle
+					NewBlock.Base = Dirt;
 				Blocks[X][Y][Z] = NewBlock;
 			}
 		}
@@ -273,13 +292,6 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		HandleInput();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, Grass.TopFaceTexture.GLUID);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, Grass.BottomFaceTexture.GLUID);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, Grass.RightFaceTexture.GLUID);
 
 		glUseProgram(ShaderProgram);
 
@@ -317,6 +329,8 @@ int main()
 						(ThisBlock->DiscardLeft ? 16 : 0) |
 						(ThisBlock->DiscardRight ? 32 : 0);
 					glUniform1i(DiscardsLocation, Discards);
+
+					ThisBlock->Base.BindTextures(ShaderProgram);
 
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 				}
