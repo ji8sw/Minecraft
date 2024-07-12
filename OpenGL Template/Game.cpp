@@ -60,6 +60,9 @@ int Count = 0;
 float CursorX = 1920 / 2, CursorY = 1080 / 2;
 bool FirstMouse = true, InMenu = false;
 float CameraYaw = -90.0f, CameraPitch = 0.0f;
+typedef std::vector<std::vector<std::vector<Block>>> chunkData;
+typedef std::map<std::pair<int, int>, chunkData> ExistingChunksMap;
+ExistingChunksMap ExistingChunks;
 
 void WindowSizeChanged(GLFWwindow* Window, int NewWidth, int NewHeight)
 {
@@ -216,11 +219,11 @@ void CheckAdjacentBlocks(const std::vector<std::vector<std::vector<Block>>>& Blo
 	block->DiscardTop = block->DiscardBottom = block->DiscardFront = block->DiscardBack = block->DiscardLeft = block->DiscardRight = false;
 
 	// Check the right side
-	if ((Position.x + 1) < WorldWidth && Blocks[Position.x + 1][Position.y][Position.z].Base.Catagory != BlockCatagory::Air)
+	if ((Position.x + 1) < (WorldWidth - 1) && Blocks[Position.x + 1][Position.y][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardRight = true;
 
 	// Check the left side
-	if (Position.x - 1 >= 0 && Blocks[Position.x - 1][Position.y][Position.z].Base.Catagory != BlockCatagory::Air)
+	if ((Position.x - 1) >= 0 && Blocks[Position.x - 1][Position.y][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardLeft = true;
 
 	// Check the top side
@@ -228,16 +231,81 @@ void CheckAdjacentBlocks(const std::vector<std::vector<std::vector<Block>>>& Blo
 		block->DiscardTop = true;
 
 	// Check the bottom side
-	if (Position.y - 1 >= 0 && Blocks[Position.x][Position.y - 1][Position.z].Base.Catagory != BlockCatagory::Air)
+	if ((Position.y - 1) >= 0 && Blocks[Position.x][Position.y - 1][Position.z].Base.Catagory != BlockCatagory::Air)
 		block->DiscardBottom = true;
 
 	// Check the front side
-	if ((Position.z + 1) < WorldWidth && Blocks[Position.x][Position.y][Position.z + 1].Base.Catagory != BlockCatagory::Air)
+	if ((Position.z + 1) < (WorldDepth - 1) && Blocks[Position.x][Position.y][Position.z + 1].Base.Catagory != BlockCatagory::Air)
 		block->DiscardFront = true;
 
 	// Check the back side
 	if ((Position.z - 1) >= 0 && Blocks[Position.x][Position.y][Position.z - 1].Base.Catagory != BlockCatagory::Air)
 		block->DiscardBack = true;
+}
+
+
+glm::vec2 GetChunkCoordFromVector3(glm::vec3 Position) {
+
+	int X = floor(Position.x / 16), Y = floor(Position.z / 16);
+	return glm::vec2(X, Y);
+}
+
+noise Noise;
+BlockBase Grass = BlockBase();
+BlockBase Dirt = BlockBase();
+BlockBase Cobble = BlockBase();
+BlockBase AirBlock = BlockBase();
+
+void CreateChunk(int ChunkX, int ChunkY, int Width = 16, int Height = 16, int Depth = 16)
+{
+	std::cout << std::format("Creating Chunk: X{} Y{}", ChunkX, ChunkY);
+
+	std::vector<std::vector<double>> ChunkInfo = Noise.GenerateChunk(Noise.Perlin, ChunkX, ChunkY);
+	std::vector<std::vector<std::vector<Block>>> Blocks(Width, std::vector<std::vector<Block>>(Height, std::vector<Block>(Depth)));
+
+	for (int X = 0; X < Width; X++) {
+		for (int Z = 0; Z < Depth; Z++) {
+			int ColumnHeight = static_cast<int>((ChunkInfo[X][Z] + 1) * 0.5 * Height);
+
+			for (int Y = 0; Y < Height; ++Y) {
+				Block NewBlock;
+				if (Y > ColumnHeight) {
+					NewBlock.Base = AirBlock; // Above the height determined by noise
+				}
+				else if (Y == ColumnHeight) {
+					NewBlock.Base = Grass; // Top block at this height
+				}
+				else if (Y <= 1) {
+					NewBlock.Base = Cobble; // Bottom 2 blocks
+				}
+				else {
+					NewBlock.Base = Dirt; // All other blocks below the top
+				}
+
+				NewBlock.Matrix = glm::translate(glm::mat4(1.0f), glm::vec3(ChunkX * 15 + X, Y, ChunkY * 15 + Z));
+				Blocks[X][Y][Z] = NewBlock;
+			}
+		}
+	}
+
+	ExistingChunks[std::make_pair(ChunkX, ChunkY)] = Blocks;
+}
+
+void CheckAdjacentBlocksForAllChunks()
+{
+	for (auto& [ChunkCoord, Blocks] : ExistingChunks)
+	{
+		int ChunkX = ChunkCoord.first;
+		int ChunkY = ChunkCoord.second;
+		for (unsigned int X = 0; X < 15; X++) {
+			for (unsigned int Y = 0; Y < 15; Y++) {
+				for (unsigned int Z = 0; Z < 15; Z++) {
+					if (ExistingChunks[ChunkCoord][X][Y][Z].Base.Catagory != BlockCatagory::Air)
+						CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &Blocks[X][Y][Z]);
+				}
+			}
+		}
+	}
 }
 
 int main()
@@ -251,75 +319,32 @@ int main()
 
 	CreateBuffers();
 
-	BlockBase Grass = BlockBase();
 	Grass.Name = "Grass";
 	std::string Paths[3] = { "GrassTop.png", "Dirt.png", "GrassSide.png" };
 	Grass.FillTexturesStandardBlockByPaths(Paths);
 	if (!Grass.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
-	BlockBase Dirt = BlockBase();
 	Dirt.Name = "Dirt";
 	std::string DirtPaths[3] = { "Dirt.png", "Dirt.png", "Dirt.png" };
 	Dirt.FillTexturesStandardBlockByPaths(DirtPaths);
 	if (!Dirt.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
-	BlockBase Cobble = BlockBase();
 	Cobble.Name = "Cobblestone";
 	std::string CobblePaths[3] = { "Cobblestone.png", "Cobblestone.png", "Cobblestone.png" };
 	Cobble.FillTexturesStandardBlockByPaths(CobblePaths);
 	if (!Cobble.CreateTextures(ShaderProgram))
 		return ExitCodes::Error;
 
-	BlockBase Air = BlockBase();
-	Air.Name = "Air";
-	Air.Catagory = BlockCatagory::Air;
-
-	noise Noise;
-	std::vector<std::vector<double>> ChunkInfo = Noise.GenerateChunk(Noise.Perlin);
-
-	unsigned int WorldWidth = 16, WorldHeight = 16, WorldDepth = 16;
-	std::vector<std::vector<std::vector<Block>>> Blocks(WorldWidth, std::vector<std::vector<Block>>(WorldHeight, std::vector<Block>(WorldDepth)));
-
-	for (unsigned int X = 0; X < WorldWidth; X++) {
-		for (unsigned int Z = 0; Z < WorldDepth; Z++) {
-			int ColumnHeight = static_cast<int>((ChunkInfo[X][Z] + 1) * 0.5 * WorldHeight);
-
-			for (unsigned int Y = 0; Y < WorldHeight; ++Y) {
-				Block NewBlock;
-				if (Y > ColumnHeight) {
-					NewBlock.Base = Air; // Above the height determined by noise
-				}
-				else if (Y == ColumnHeight) {
-					NewBlock.Base = Grass; // Top block at this height
-				}
-				else if (Y <= 1) {
-					NewBlock.Base = Cobble; // Bottom 2 blocks
-				}
-				else {
-					NewBlock.Base = Dirt; // All other blocks below the top
-				}
-
-				NewBlock.Matrix = glm::translate(glm::mat4(1.0f), glm::vec3(X, Y, Z));
-				Blocks[X][Y][Z] = NewBlock;
-			}
-		}
-	}
-
-	for (unsigned int X = 0; X < WorldWidth; X++) {
-		for (unsigned int Y = 0; Y < WorldHeight; Y++) {
-			for (unsigned int Z = 0; Z < WorldDepth; Z++) {
-				if (Blocks[X][Y][Z].Base.Catagory != BlockCatagory::Air)
-					CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &Blocks[X][Y][Z]);
-			}
-		}
-	}
+	AirBlock.Name = "Air";
+	AirBlock.Catagory = BlockCatagory::Air;
 
 	LastTime = glfwGetTime();
 	glfwSwapInterval(0);
 	glm::mat4 View = glm::mat4(1.0f);
 	glm::mat4 Projection = glm::mat4(1.0f);
+
 	while (!glfwWindowShouldClose(Window))
 	{
 		double CurrentTime = glfwGetTime();
@@ -339,23 +364,36 @@ int main()
 
 		glBindVertexArray(VAO);
 
-		for (unsigned int X = 0; X < Blocks.size(); X++) {
-			for (unsigned int Y = 0; Y < Blocks[X].size(); Y++) {
-				for (unsigned int Z = 0; Z < Blocks[X][Y].size(); Z++) {
-					Block* ThisBlock = &Blocks[X][Y][Z];
-					if (ThisBlock->Base.Catagory == BlockCatagory::Air) continue;
+		glm::vec2 CameraChunkCoord = GetChunkCoordFromVector3(CameraPosition);
+		auto ChunkCoordPair = std::make_pair(static_cast<int>(CameraChunkCoord.x), static_cast<int>(CameraChunkCoord.y));
+		if (ExistingChunks.find(ChunkCoordPair) == ExistingChunks.end())
+		{
+			CreateChunk(CameraChunkCoord.x, CameraChunkCoord.y);
+			CheckAdjacentBlocksForAllChunks();
+		}
 
-					glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Model"), 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix));
-					glUniform1i(glGetUniformLocation(ShaderProgram, "Discards"),
-						(ThisBlock->DiscardTop ? 1 : 0) |
-						(ThisBlock->DiscardBottom ? 2 : 0) |
-						(ThisBlock->DiscardFront ? 4 : 0) |
-						(ThisBlock->DiscardBack ? 8 : 0) |
-						(ThisBlock->DiscardLeft ? 16 : 0) |
-						(ThisBlock->DiscardRight ? 32 : 0));
+		for (auto& [ChunkCoord, Blocks] : ExistingChunks)
+		{
+			int ChunkX = ChunkCoord.first;
+			int ChunkY = ChunkCoord.second;
+			for (unsigned int X = 0; X < 15; X++) {
+				for (unsigned int Y = 0; Y < 15; Y++) {
+					for (unsigned int Z = 0; Z < 15; Z++) {
+						Block* ThisBlock = &ExistingChunks[ChunkCoord][X][Y][Z];
+						if (ThisBlock->Base.Catagory == BlockCatagory::Air) continue;
 
-					ThisBlock->Base.BindTextures(ShaderProgram);
-					glDrawArrays(GL_TRIANGLES, 0, 36);
+						glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Model"), 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix));
+						glUniform1i(glGetUniformLocation(ShaderProgram, "Discards"),
+							(ThisBlock->DiscardTop ? 1 : 0) |
+							(ThisBlock->DiscardBottom ? 2 : 0) |
+							(ThisBlock->DiscardFront ? 4 : 0) |
+							(ThisBlock->DiscardBack ? 8 : 0) |
+							(ThisBlock->DiscardLeft ? 16 : 0) |
+							(ThisBlock->DiscardRight ? 32 : 0));
+
+						ThisBlock->Base.BindTextures(ShaderProgram);
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+					}
 				}
 			}
 		}
@@ -363,7 +401,6 @@ int main()
 		ImGUIManager.StartFrame();
 
 		ImGui::Begin("Minecraft | Statistics");
-
 
 		if (CurrentTime - LastTime >= 0.1)
 		{
@@ -375,6 +412,7 @@ int main()
 			LastTime = CurrentTime;
 		}
 
+		ImGui::Text(std::format("Camera Chunk Coordinate: X{} Y{}", CameraChunkCoord.x, CameraChunkCoord.y).c_str());
 		ImGui::Text(std::format("{} FPS", FPS).c_str());
 		ImGui::Text(std::format("{} MS", MS).c_str());
 		ImGui::End();
