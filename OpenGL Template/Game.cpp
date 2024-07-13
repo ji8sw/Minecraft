@@ -1,7 +1,8 @@
 #include "Helper.h"
 
-float RectangleVertices[] =
+float CubeVertices[] =
 {
+	// Front face
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
 	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -9,6 +10,7 @@ float RectangleVertices[] =
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
+	// Back face
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
 	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
@@ -16,6 +18,7 @@ float RectangleVertices[] =
 	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
+	// Left face
 	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
@@ -23,6 +26,7 @@ float RectangleVertices[] =
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
+	// Right face
 	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
@@ -30,20 +34,23 @@ float RectangleVertices[] =
 	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 // Bottom face
+	 -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	  0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	  0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	  0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	 // Top face
+	 -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	  0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	  0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	  0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	 -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
+
 
 GLFWwindow* Window = NULL;
 unsigned int VBO, VAO, EBO;
@@ -114,9 +121,9 @@ bool InitializeGL(int Major = 3, int Minor = 3)
 	return true;
 }
 
-bool MakeWindow(int Width = 1920, int Height = 1080, std::string Title = "Minecraft", bool MakeContextCurrent = true, bool DefViewport = true)
+bool MakeWindow(int Width = 1920, int Height = 1080, const char* Title = "Minecraft", bool MakeContextCurrent = true, bool DefViewport = true)
 {
-	Window = glfwCreateWindow(Width, Height, Title.c_str(), NULL, NULL);
+	Window = glfwCreateWindow(Width, Height, Title, NULL, NULL);
 	if (Window == NULL)
 		return false;
 	if (MakeContextCurrent) glfwMakeContextCurrent(Window);
@@ -139,7 +146,7 @@ bool CreateBuffers()
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(RectangleVertices), RectangleVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(CubeVertices), CubeVertices, GL_STATIC_DRAW);
 
 	// position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
@@ -251,38 +258,43 @@ glm::vec2 GetChunkCoordFromVector3(glm::vec3 Position) {
 }
 
 noise Noise;
-BlockBase Grass = BlockBase();
-BlockBase Dirt = BlockBase();
-BlockBase Cobble = BlockBase();
+BlockBase GrassBlock = BlockBase();
+BlockBase DirtBlock = BlockBase();
+BlockBase CobblestoneBlock = BlockBase();
 BlockBase AirBlock = BlockBase();
 
 void CreateChunk(int ChunkX, int ChunkY, int Width = 16, int Height = 16, int Depth = 16)
 {
-	std::cout << std::format("Creating Chunk: X{} Y{}", ChunkX, ChunkY);
+	std::cout << std::format("Creating Chunk: X{} Y{}\n", ChunkX, ChunkY);
 
-	std::vector<std::vector<double>> ChunkInfo = Noise.GenerateChunk(Noise.Perlin, ChunkX, ChunkY);
+	auto ChunkInfo = Noise.GenerateChunk(Noise.Perlin, ChunkX, ChunkY);
 	std::vector<std::vector<std::vector<Block>>> Blocks(Width, std::vector<std::vector<Block>>(Height, std::vector<Block>(Depth)));
 
+	int BaseX = ChunkX * 15;
+	int BaseY = ChunkY * 15;
+	Block NewBlock;
+
+	#pragma omp parallel for collapse(3)
 	for (int X = 0; X < Width; X++) {
 		for (int Z = 0; Z < Depth; Z++) {
 			int ColumnHeight = static_cast<int>((ChunkInfo[X][Z] + 1) * 0.5 * Height);
 
 			for (int Y = 0; Y < Height; ++Y) {
-				Block NewBlock;
+
 				if (Y > ColumnHeight) {
 					NewBlock.Base = AirBlock; // Above the height determined by noise
 				}
 				else if (Y == ColumnHeight) {
-					NewBlock.Base = Grass; // Top block at this height
+					NewBlock.Base = GrassBlock; // Top block at this height
 				}
 				else if (Y <= 1) {
-					NewBlock.Base = Cobble; // Bottom 2 blocks
+					NewBlock.Base = CobblestoneBlock; // Bottom 2 blocks
 				}
 				else {
-					NewBlock.Base = Dirt; // All other blocks below the top
+					NewBlock.Base = DirtBlock; // All other blocks below the top
 				}
 
-				NewBlock.Matrix = glm::translate(glm::mat4(1.0f), glm::vec3(ChunkX * 15 + X, Y, ChunkY * 15 + Z));
+				NewBlock.Matrix = glm::translate(glm::mat4(1.0f), glm::vec3(BaseX + X, Y, BaseY + Z));
 				Blocks[X][Y][Z] = NewBlock;
 			}
 		}
@@ -297,11 +309,16 @@ void CheckAdjacentBlocksForAllChunks()
 	{
 		int ChunkX = ChunkCoord.first;
 		int ChunkY = ChunkCoord.second;
-		for (unsigned int X = 0; X < 15; X++) {
-			for (unsigned int Y = 0; Y < 15; Y++) {
-				for (unsigned int Z = 0; Z < 15; Z++) {
-					if (ExistingChunks[ChunkCoord][X][Y][Z].Base.Catagory != BlockCatagory::Air)
-						CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &Blocks[X][Y][Z]);
+		chunkData& ChunkData = ExistingChunks[ChunkCoord];
+
+		#pragma omp parallel for collapse(3)
+		for (int X = 0; X < 15; X++) {
+			std::vector<std::vector<Block>>& XBlocks = ChunkData[X];
+			for (int Y = 0; Y < 15; Y++) {
+				std::vector<Block>& YBlocks = XBlocks[Y];
+				for (int Z = 0; Z < 15; Z++) {
+					if (YBlocks[Z].Base.Catagory != BlockCatagory::Air)
+						CheckAdjacentBlocks(Blocks, glm::vec3(X, Y, Z), &YBlocks[Z]);
 				}
 			}
 		}
@@ -319,23 +336,31 @@ int main()
 
 	CreateBuffers();
 
-	Grass.Name = "Grass";
-	std::string Paths[3] = { "GrassTop.png", "Dirt.png", "GrassSide.png" };
-	Grass.FillTexturesStandardBlockByPaths(Paths);
-	if (!Grass.CreateTextures(ShaderProgram))
-		return ExitCodes::Error;
+	Texture GrassTop = Texture("GrassTop.png");
+	TextureMap["GrassTop"] = GrassTop.Binding;
 
-	Dirt.Name = "Dirt";
-	std::string DirtPaths[3] = { "Dirt.png", "Dirt.png", "Dirt.png" };
-	Dirt.FillTexturesStandardBlockByPaths(DirtPaths);
-	if (!Dirt.CreateTextures(ShaderProgram))
-		return ExitCodes::Error;
+	Texture Dirt = Texture("Dirt.png");
+	TextureMap["Dirt"] = Dirt.Binding;
 
-	Cobble.Name = "Cobblestone";
-	std::string CobblePaths[3] = { "Cobblestone.png", "Cobblestone.png", "Cobblestone.png" };
-	Cobble.FillTexturesStandardBlockByPaths(CobblePaths);
-	if (!Cobble.CreateTextures(ShaderProgram))
-		return ExitCodes::Error;
+	Texture GrassSide = Texture("GrassSide.png");
+	TextureMap["GrassSide"] = GrassSide.Binding;
+
+	Texture Cobblestone = Texture("Cobblestone.png");
+	TextureMap["Cobblestone"] = Cobblestone.Binding;
+
+	TextureBinding GrassBindings[3] = { GrassTop.Binding, Dirt.Binding, GrassSide.Binding };
+	GrassBlock.FillTexturesStandardBlock(GrassBindings);
+	GrassBlock.Name = "Grass";
+
+	TextureBinding DirtBindings[3] = { Dirt.Binding, Dirt.Binding, Dirt.Binding };
+	DirtBlock.FillTexturesStandardBlock(DirtBindings);
+	DirtBlock.Name = "Dirt";
+
+	TextureBinding CobblestoneBindings[3] = { Cobblestone.Binding, Cobblestone.Binding, Cobblestone.Binding };
+	CobblestoneBlock.FillTexturesStandardBlock(CobblestoneBindings);
+	CobblestoneBlock.Name = "Cobblestone";
+
+	BindAllTextures(ShaderProgram);
 
 	AirBlock.Name = "Air";
 	AirBlock.Catagory = BlockCatagory::Air;
@@ -350,7 +375,7 @@ int main()
 		double CurrentTime = glfwGetTime();
 		Count++;
 		
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		HandleInput();
 
@@ -359,31 +384,45 @@ int main()
 		View = glm::lookAt(CameraPosition, CameraPosition + CameraFront, CameraUp);
 		Projection = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
 
-		glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "View"), 1, GL_FALSE, &View[0][0]);
-		glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Projection"), 1, GL_FALSE, glm::value_ptr(Projection));
+		glUniformMatrix4fv(3, 1, GL_FALSE, &View[0][0]); // layout(location = 3) uniform mat4 View;
+		glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(Projection)); // layout(location = 4) uniform mat4 Projection;
 
-		glBindVertexArray(VAO);
-
+		bool ChunkChanged = false;
 		glm::vec2 CameraChunkCoord = GetChunkCoordFromVector3(CameraPosition);
-		auto ChunkCoordPair = std::make_pair(static_cast<int>(CameraChunkCoord.x), static_cast<int>(CameraChunkCoord.y));
-		if (ExistingChunks.find(ChunkCoordPair) == ExistingChunks.end())
-		{
-			CreateChunk(CameraChunkCoord.x, CameraChunkCoord.y);
-			CheckAdjacentBlocksForAllChunks();
+		const int RenderDistance = 2;
+		#pragma omp parallel for collapse(2)
+		for (int xOffset = -RenderDistance; xOffset <= RenderDistance; ++xOffset) {
+			for (int yOffset = -RenderDistance; yOffset <= RenderDistance; ++yOffset) {
+				glm::vec2 ChunkCoord = CameraChunkCoord + glm::vec2(xOffset, yOffset);
+				auto ChunkCoordPair = std::make_pair(static_cast<int>(ChunkCoord.x), static_cast<int>(ChunkCoord.y));
+				if (ExistingChunks.find(ChunkCoordPair) == ExistingChunks.end())
+				{
+					CreateChunk(ChunkCoord.x, ChunkCoord.y);
+					ChunkChanged = true;
+				}
+			}
 		}
+
+		if (ChunkChanged)
+			CheckAdjacentBlocksForAllChunks();
 
 		for (auto& [ChunkCoord, Blocks] : ExistingChunks)
 		{
 			int ChunkX = ChunkCoord.first;
 			int ChunkY = ChunkCoord.second;
+			if (glm::distance(glm::vec2(ChunkX, ChunkY), CameraChunkCoord) > RenderDistance) continue;
+
+			chunkData& Chunk = ExistingChunks[ChunkCoord];
 			for (unsigned int X = 0; X < 15; X++) {
+				std::vector<std::vector<Block>>& XBlocks = Chunk[X];
 				for (unsigned int Y = 0; Y < 15; Y++) {
+					std::vector<Block>& YBlocks = XBlocks[Y];
 					for (unsigned int Z = 0; Z < 15; Z++) {
-						Block* ThisBlock = &ExistingChunks[ChunkCoord][X][Y][Z];
+						Block* ThisBlock = &YBlocks[Z];
 						if (ThisBlock->Base.Catagory == BlockCatagory::Air) continue;
 
-						glUniformMatrix4fv(glGetUniformLocation(ShaderProgram, "Model"), 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix));
-						glUniform1i(glGetUniformLocation(ShaderProgram, "Discards"),
+						glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(ThisBlock->Matrix)); // layout(location = 2) uniform mat4 Model
+						glUniform1i(106, // layout(location = 106) uniform int Discards;
 							(ThisBlock->DiscardTop ? 1 : 0) |
 							(ThisBlock->DiscardBottom ? 2 : 0) |
 							(ThisBlock->DiscardFront ? 4 : 0) |
@@ -391,7 +430,7 @@ int main()
 							(ThisBlock->DiscardLeft ? 16 : 0) |
 							(ThisBlock->DiscardRight ? 32 : 0));
 
-						ThisBlock->Base.BindTextures(ShaderProgram);
+						ThisBlock->Base.SetShaderTextures(ShaderProgram);
 						glDrawArrays(GL_TRIANGLES, 0, 36);
 					}
 				}
@@ -418,8 +457,8 @@ int main()
 		ImGui::End();
 
 		ImGUIManager.EndFrame();
-
 		glfwSwapBuffers(Window);
+
 		glfwPollEvents();
 	}
 

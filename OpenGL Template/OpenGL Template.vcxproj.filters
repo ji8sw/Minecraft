@@ -84,12 +84,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="StandardVertex.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="StandardFragment.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-  </ItemGroup>
 </Project>

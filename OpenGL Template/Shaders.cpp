@@ -3,17 +3,16 @@
 const char* StandardVertexShaderSource =
 R"(
 #version 330 core
+#extension GL_ARB_explicit_uniform_location : enable
 layout(location = 0) in vec3 VertexPosition;
 layout(location = 1) in vec2 TextureCoordinates;
 
 out vec3 FragmentPosition;
 out vec2 OutTextureCoordinates;
 
-uniform mat4 Model;
-uniform mat4 View;
-uniform mat4 Projection;
-
-const float EPSILON = 0.01;
+layout(location = 2) uniform mat4 Model;
+layout(location = 3) uniform mat4 View;
+layout(location = 4) uniform mat4 Projection;
 
 void main()
 {
@@ -28,19 +27,20 @@ void main()
 const char* StandardFragmentShaderSource =
 R"(
 #version 330 core
+#extension GL_ARB_explicit_uniform_location : enable
 out vec4 FragColor;
 
 in vec3 FragmentPosition;
 in vec2 OutTextureCoordinates;
 
-uniform sampler2D Top;
-uniform sampler2D Bottom;
-uniform sampler2D Front;
-uniform sampler2D Back;
-uniform sampler2D Left;
-uniform sampler2D Right;
+layout(location = 100) uniform sampler2D Top;
+layout(location = 101) uniform sampler2D Bottom;
+layout(location = 102) uniform sampler2D Front;
+layout(location = 103) uniform sampler2D Back;
+layout(location = 104) uniform sampler2D Left;
+layout(location = 105) uniform sampler2D Right;
 
-uniform int Discards;
+layout(location = 106) uniform int Discards;
 
 const float EPSILON = 0.01;
 

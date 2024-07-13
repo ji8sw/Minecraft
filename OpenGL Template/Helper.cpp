@@ -6,98 +6,57 @@ unsigned int ExistingTextures = 0;
 bool Texture::Create()
 {
     if (Created) return true;
-    GLUID = CreateTexture(FilePath.c_str());
-    if (GLUID == -1)
+    Binding.GLUID = CreateTexture(FilePath.c_str());
+    if (Binding.GLUID == -1) 
+    {
+        std::cerr << "Failed to load texture: " << FilePath << std::endl;
         return false;
+    }
     Created = true;
-    TUID = ExistingTextures + GL_TEXTURE0;
+    Binding.TUID = ExistingTextures + GL_TEXTURE0;
     ExistingTextures++;
+    std::cout << "Created texture: " << FilePath << ", GLUID: " << Binding.GLUID << ", TUID: " << Binding.TUID << std::endl;
 
     return true;
 }
 
-bool BlockBase::CreateTextures(unsigned int ShaderProgram)
+void Texture::BindTexture(unsigned int ShaderProgram)
 {
-    if (!TopFaceTexture.Create() || !BottomFaceTexture.Create() || !FrontFaceTexture.Create() || !BackFaceTexture.Create() || !LeftFaceTexture.Create() || !RightFaceTexture.Create())
-        return false;
-
-    return true;
+    glActiveTexture(Binding.TUID);
+    glBindTexture(GL_TEXTURE_2D, Binding.GLUID);
 }
 
-void BlockBase::BindTextures(unsigned int ShaderProgram)
+void BindTexture(TextureBinding Binding)
 {
-    glActiveTexture(TopFaceTexture.TUID);
-    glBindTexture(GL_TEXTURE_2D, TopFaceTexture.GLUID);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Top"), TopFaceTexture.TUID - GL_TEXTURE0);
-
-    glActiveTexture(BottomFaceTexture.TUID);
-    glBindTexture(GL_TEXTURE_2D, BottomFaceTexture.GLUID);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Bottom"), BottomFaceTexture.TUID - GL_TEXTURE0);
-
-    glActiveTexture(FrontFaceTexture.TUID);
-    glBindTexture(GL_TEXTURE_2D, FrontFaceTexture.GLUID);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Front"), FrontFaceTexture.TUID - GL_TEXTURE0);
-
-    glActiveTexture(BackFaceTexture.TUID);
-    glBindTexture(GL_TEXTURE_2D, BackFaceTexture.GLUID);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Back"), BackFaceTexture.TUID - GL_TEXTURE0);
-
-    glActiveTexture(LeftFaceTexture.TUID);
-    glBindTexture(GL_TEXTURE_2D, LeftFaceTexture.GLUID);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Left"), LeftFaceTexture.TUID - GL_TEXTURE0);
-
-    glActiveTexture(RightFaceTexture.TUID);
-    glBindTexture(GL_TEXTURE_2D, RightFaceTexture.GLUID);
-    glUniform1i(glGetUniformLocation(ShaderProgram, "Right"), RightFaceTexture.TUID - GL_TEXTURE0);
+    glActiveTexture(Binding.TUID);
+    glBindTexture(GL_TEXTURE_2D, Binding.GLUID);
 }
 
-void BlockBase::FillTextures(std::string Paths[4])
+void BlockBase::SetShaderTextures(unsigned int ShaderProgram)
 {
-    TopFaceTexture = Texture();
-    TopFaceTexture.FilePath = Paths[0];
-
-    BottomFaceTexture = Texture();
-    BottomFaceTexture.FilePath = Paths[1];
-
-    FrontFaceTexture = Texture();
-    FrontFaceTexture.FilePath = Paths[2];
-
-    BackFaceTexture = Texture();
-    BackFaceTexture.FilePath = Paths[3];
-
-    LeftFaceTexture = Texture();
-    LeftFaceTexture.FilePath = Paths[4];
-
-    RightFaceTexture = Texture();
-    RightFaceTexture.FilePath = Paths[5];
+    glUniform1i(100, TopFaceTexture.TUID - GL_TEXTURE0);
+    glUniform1i(101, BottomFaceTexture.TUID - GL_TEXTURE0);
+    glUniform1i(102, FrontFaceTexture.TUID - GL_TEXTURE0);
+    glUniform1i(103, BackFaceTexture.TUID - GL_TEXTURE0);
+    glUniform1i(104, LeftFaceTexture.TUID - GL_TEXTURE0);
+    glUniform1i(105, RightFaceTexture.TUID - GL_TEXTURE0);
 }
 
-void BlockBase::FillTexturesStandardBlock(std::string Paths[2]) // create 3 textures: top, bottom, sides
+void BlockBase::FillTextures(TextureBinding Bindings[5])
 {
-    TopFaceTexture = Texture();
-    TopFaceTexture.FilePath = Paths[0];
-
-    BottomFaceTexture = Texture();
-    BottomFaceTexture.FilePath = Paths[1];
-
-    FrontFaceTexture = Texture();
-    FrontFaceTexture.FilePath = Paths[2];
-
-    BackFaceTexture = FrontFaceTexture;
-    LeftFaceTexture = FrontFaceTexture;
-    RightFaceTexture = FrontFaceTexture;
+    TopFaceTexture      = Bindings[0];
+    BottomFaceTexture   = Bindings[1];
+    FrontFaceTexture    = Bindings[2];                   
+    BackFaceTexture     = Bindings[3];                
+    LeftFaceTexture     = Bindings[4];                
+    RightFaceTexture    = Bindings[5];
 }
 
-void BlockBase::FillTexturesStandardBlockByPaths(std::string Paths[2]) // create 3 textures: top, bottom, sides
+void BlockBase::FillTexturesStandardBlock(TextureBinding Bindings[3]) // create 3 textures: top, bottom, sides
 {
-    TopFaceTexture = Texture();
-    TopFaceTexture.FilePath = Paths[0];
-
-    BottomFaceTexture = Texture();
-    BottomFaceTexture.FilePath = Paths[1];
-
-    FrontFaceTexture = Texture();
-    FrontFaceTexture.FilePath = Paths[2];
+    TopFaceTexture = Bindings[0];
+    BottomFaceTexture = Bindings[1];
+    FrontFaceTexture = Bindings[2];
 
     BackFaceTexture = FrontFaceTexture;
     LeftFaceTexture = FrontFaceTexture;
@@ -114,7 +73,7 @@ void BlockBase::FillTexturesFromBlock(BlockBase ToCopy)
     RightFaceTexture =  ToCopy.RightFaceTexture;
 }
 
-unsigned int CreateTexture(const char* Path, int Type , int TextureRepeat, int MipmapSmoothing, int Smoothing, bool FlipVertically)
+unsigned int CreateTexture(const char* Path, int Type, int TextureRepeat, int MipmapSmoothing, int Smoothing, bool FlipVertically)
 {
     stbi_set_flip_vertically_on_load(FlipVertically);
     unsigned int NewTexture;
@@ -128,12 +87,21 @@ unsigned int CreateTexture(const char* Path, int Type , int TextureRepeat, int M
     int Width, Height, ChannelCount;
     unsigned char* Data = stbi_load(std::format("Textures/{}", Path).c_str(), &Width, &Height, &ChannelCount, 0);
 
-    if (!Data)
+    if (!Data) 
+    {
+        stbi_image_free(Data);
         return -1;
+    }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, Type, Width, Height, 0, Type, GL_UNSIGNED_BYTE, Data);
+    glTexImage2D(GL_TEXTURE_2D, 0, Type, Width, Height, 0, (ChannelCount == 4 ? GL_RGBA : GL_RGB), GL_UNSIGNED_BYTE, Data);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(Data);
 
     return NewTexture;
+}
+
+void BindAllTextures(unsigned int ShaderProgram)
+{
+    for (const auto& [Name, Binding] : TextureMap) 
+        BindTexture(Binding);
 }

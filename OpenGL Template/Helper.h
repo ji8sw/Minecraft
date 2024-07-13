@@ -8,7 +8,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <format>
-#include <glm/glm.hpp>
+#include "glm/glm.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <map>
@@ -18,6 +18,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "Noise.h"
+#include <omp.h>
 
 enum ExitCodes {
 	Success = 0,
@@ -71,13 +72,28 @@ inline const char* ReadFile(const char* Path)
 
 unsigned int CreateTexture(const char* Path, int Type = GL_RGBA, int TextureRepeat = GL_REPEAT, int MipmapSmoothing = GL_LINEAR_MIPMAP_NEAREST, int Smoothing = GL_NEAREST, bool FlipVertically = true);
 
-struct Texture {
-    std::string FilePath;
+struct TextureBinding {
     unsigned int GLUID;
     unsigned int TUID;
+};
+
+struct Texture {
+    std::string FilePath;
+    TextureBinding Binding;
     bool Created = false;
+    void BindTexture(unsigned int ShaderProgram);
+
+    Texture(std::string FilePath) : FilePath(FilePath)
+    {
+        Create();
+    }
+
+private:
     bool Create();
 };
+
+inline std::map<std::string, TextureBinding> TextureMap = std::map<std::string, TextureBinding>();
+void BindAllTextures(unsigned int ShaderProgram);
 
 enum BlockCatagory {
     NormalPlaced,
@@ -89,22 +105,18 @@ struct BlockBase {
     std::string Name;
     BlockCatagory Catagory = BlockCatagory::NormalNatural;
 
-    Texture TopFaceTexture;
-    Texture BottomFaceTexture;
-    Texture FrontFaceTexture;
-    Texture BackFaceTexture;
-    Texture LeftFaceTexture;
-    Texture RightFaceTexture;
+    TextureBinding TopFaceTexture;
+    TextureBinding BottomFaceTexture;
+    TextureBinding FrontFaceTexture;
+    TextureBinding BackFaceTexture;
+    TextureBinding LeftFaceTexture;
+    TextureBinding RightFaceTexture;
 
-    void BindTextures(unsigned int ShaderProgram);
+    void SetShaderTextures(unsigned int ShaderProgram);
 
-    bool CreateTextures(unsigned int ShaderProgram);
+    void FillTextures(TextureBinding Bindings[5]);
 
-    void FillTextures(std::string Paths[4]);
-
-    void FillTexturesStandardBlock(std::string Paths[2]); // create 3 textures: top, bottom, sides
-
-    void FillTexturesStandardBlockByPaths(std::string Paths[2]); // create 3 textures: top, bottom, sides
+    void FillTexturesStandardBlock(TextureBinding Bindings[3]); // 3 textures: top, bottom, sides
 
     void FillTexturesFromBlock(BlockBase ToCopy); // copy textures from another block
 };
